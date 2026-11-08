@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rakumaku</title>
+  <title>Tabel Nilai Rapor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
@@ -17,66 +17,6 @@
     .animate-slideInLeft { animation: slideInLeft 0.4s forwards; }
     .animate-slideOutRight { animation: slideOutRight 0.4s forwards; }
   </style>
-	<script>
-  // URL Deployment Apps Script Anda
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDIGxJ7vIQPsb3Xz-5Ci-HEQruDQLrbYlvbnknr3pF91VnldaOzqKgoURnJv0nYGA/exec";
-
-  // Wrapper agar google.script.run berfungsi di Cloudflare Pages
-  if (typeof google === 'undefined' || !google.script) {
-    window.google = {
-      script: {
-        run: {
-          withSuccessHandler(successCallback) {
-            this._success = successCallback;
-            return this;
-          },
-          withFailureHandler(failureCallback) {
-            this._failure = failureCallback;
-            return this;
-          },
-          _call(funcName, args) {
-            fetch(SCRIPT_URL, {
-              method: 'POST',
-              body: JSON.stringify({ func: funcName, args: args })
-            })
-            .then(res => res.json())
-            .then(res => {
-              if (res.status === 'success' && this._success) {
-                this._success(res.data);
-              } else if (this._failure) {
-                this._failure(res.message);
-              }
-            })
-            .catch(err => {
-              if (this._failure) this._failure(err);
-            });
-          }
-        }
-      }
-    };
-
-    // Daftar fungsi backend dari kode GS Anda
-    const proxyFunctions = [
-      'getUserById', 'getKelas', 'getMapelList', 'getSiswaByKelas', 'createData', 
-      'updateData', 'deleteData', 'getIdentitasSekolah', 'updateIdentitasSekolah', 
-      'saveOrUpdateData', 'uploadNilai', 'getAbsensiByKelas', 'getRaporSiswa', 
-      'syncDataSiswaToMapel', 'processUploadData', 'registerUser', 'logUserAccess', 
-      'processUploadSiswa', 'processUploadIdentitas', 'getChartData', 'getBiodataSiswa', 
-      'saveBatchNilai', 'saveAbsensi', 'getAllUsers', 'updateUser', 'deleteUser', 
-      'getAppInfo', 'updateAppInfo', 'getTPFiltered', 'saveTP', 'deleteTP', 'getAllSiswa', 
-      'addSiswa', 'updateSiswa', 'deleteSiswa', 'exportTPExcel', 'importTPExcel', 
-      'tambahMapel', 'hapusMapel', 'clearIsiMapel', 'exportExcel', 'getNilaiSiswa', 
-      'getNilaiChartSiswa', 'saveAllUsers', 'savePesanMapel', 'getPesanMapel', 
-      'getMapelPesananGuru', 'getMapelAktifSiswa', 'ambilDataLegerDb'
-    ];
-
-    proxyFunctions.forEach(fn => {
-      window.google.script.run[fn] = function(...args) {
-        return window.google.script.run._call(fn, args);
-      };
-    });
-  }
-</script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
