@@ -16,21 +16,67 @@
     .animate-slideOutLeft { animation: slideOutLeft 0.4s forwards; }
     .animate-slideInLeft { animation: slideInLeft 0.4s forwards; }
     .animate-slideOutRight { animation: slideOutRight 0.4s forwards; }
-	
-	html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #f3f4f6;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
   </style>
+	<script>
+  // URL Deployment Apps Script Anda
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDIGxJ7vIQPsb3Xz-5Ci-HEQruDQLrbYlvbnknr3pF91VnldaOzqKgoURnJv0nYGA/exec";
+
+  // Wrapper agar google.script.run berfungsi di Cloudflare Pages
+  if (typeof google === 'undefined' || !google.script) {
+    window.google = {
+      script: {
+        run: {
+          withSuccessHandler(successCallback) {
+            this._success = successCallback;
+            return this;
+          },
+          withFailureHandler(failureCallback) {
+            this._failure = failureCallback;
+            return this;
+          },
+          _call(funcName, args) {
+            fetch(SCRIPT_URL, {
+              method: 'POST',
+              body: JSON.stringify({ func: funcName, args: args })
+            })
+            .then(res => res.json())
+            .then(res => {
+              if (res.status === 'success' && this._success) {
+                this._success(res.data);
+              } else if (this._failure) {
+                this._failure(res.message);
+              }
+            })
+            .catch(err => {
+              if (this._failure) this._failure(err);
+            });
+          }
+        }
+      }
+    };
+
+    // Daftar fungsi backend dari kode GS Anda
+    const proxyFunctions = [
+      'getUserById', 'getKelas', 'getMapelList', 'getSiswaByKelas', 'createData', 
+      'updateData', 'deleteData', 'getIdentitasSekolah', 'updateIdentitasSekolah', 
+      'saveOrUpdateData', 'uploadNilai', 'getAbsensiByKelas', 'getRaporSiswa', 
+      'syncDataSiswaToMapel', 'processUploadData', 'registerUser', 'logUserAccess', 
+      'processUploadSiswa', 'processUploadIdentitas', 'getChartData', 'getBiodataSiswa', 
+      'saveBatchNilai', 'saveAbsensi', 'getAllUsers', 'updateUser', 'deleteUser', 
+      'getAppInfo', 'updateAppInfo', 'getTPFiltered', 'saveTP', 'deleteTP', 'getAllSiswa', 
+      'addSiswa', 'updateSiswa', 'deleteSiswa', 'exportTPExcel', 'importTPExcel', 
+      'tambahMapel', 'hapusMapel', 'clearIsiMapel', 'exportExcel', 'getNilaiSiswa', 
+      'getNilaiChartSiswa', 'saveAllUsers', 'savePesanMapel', 'getPesanMapel', 
+      'getMapelPesananGuru', 'getMapelAktifSiswa', 'ambilDataLegerDb'
+    ];
+
+    proxyFunctions.forEach(fn => {
+      window.google.script.run[fn] = function(...args) {
+        return window.google.script.run._call(fn, args);
+      };
+    });
+  }
+</script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
@@ -69,9 +115,9 @@
         onchange="changeLoginMode()"
         class="w-full border border-gray-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
 
-        <option value="guru">????? Guru / Admin</option>
+        <option value="guru">👨‍🏫 Guru / Admin</option>
 
-        <option value="siswa">?? Siswa</option>
+        <option value="siswa">🎓 Siswa</option>
 
       </select>
 
@@ -91,7 +137,7 @@
         id="eyeIcon"
         onclick="toggleUserId()"
         class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 text-lg">
-        ???
+        👁️
       </span>
     </div>
 
@@ -105,7 +151,7 @@
     <button
       onclick="handleLogin()"
       class="bg-blue-600 hover:bg-blue-700 transition-all duration-200 text-white font-semibold px-4 py-3 rounded-xl w-full shadow-md">
-      ?? Masuk
+      🔐 Masuk
     </button>
 
     <!-- REGISTER GURU -->
@@ -194,7 +240,7 @@
         <div>
           <h1 id="namaSekolah" class="text-2xl font-bold text-gray-800">Nama Sekolah</h1>
           <p id="alamatSekolah" class="text-sm text-gray-600">Alamat Sekolah</p>
-          <p id="emailSekolah" class="text-sm text-gray-600">Email   Web</p>
+          <p id="emailSekolah" class="text-sm text-gray-600">Email • Web</p>
         </div>
       </div>
       
@@ -214,14 +260,14 @@
           <div><strong>Tahun Ajaran</strong></div>
           <div>:</div>
           <div>
-            <span id="tahunAjaran">-</span><strong>   Semester </strong><span id="semester">-</span>
+            <span id="tahunAjaran">-</span><strong> — Semester </strong><span id="semester">-</span>
           </div>
         </div>
       </div>
       
       <!-- User Info (Kanan) -->
       <div id="userInfo" class="mt-4 md:mt-0 bg-gray-50 border border-gray-200 px-4 py-3 rounded-lg text-sm shadow-sm hidden">
-        <p class="font-semibold text-gray-700 mb-2">?? <span id="displayUser"></span></p>
+        <p class="font-semibold text-gray-700 mb-2">👤 <span id="displayUser"></span></p>
         <select id="syncMapelSelect" class="border px-2 py-1 rounded w-full mb-2 hidden"></select>
         <div class="flex gap-2">
           <button id="btnSinkronisasi" onclick="jalankanSinkronisasi()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors hidden">
@@ -241,31 +287,31 @@
       <aside id="sidebarInfo" class="lg:col-span-4 bg-white shadow-lg rounded-xl p-6 flex flex-col justify-between border border-gray-100">
         <div>
           <h2 class="text-lg font-bold mb-6 text-gray-800 flex items-center gap-2 border-b pb-3">
-            <span class="text-blue-600">??</span> Informasi Sistem
+            <span class="text-blue-600">ℹ️</span> Informasi Sistem
           </h2>
           <ul class="space-y-4 text-sm text-gray-700">
             <li class="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span class="font-medium text-gray-600">?? Nama Aplikasi</span>
+              <span class="font-medium text-gray-600">📘 Nama Aplikasi</span>
               <span id="appName" class="text-gray-500">-</span>
             </li>
             <li class="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span class="font-medium text-gray-600">??? Versi Aplikasi</span>
+              <span class="font-medium text-gray-600">🏷️ Versi Aplikasi</span>
               <span id="appVersion" class="text-gray-500">-</span>
             </li>
             <li class="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span class="font-medium text-gray-600">?? Versi Database</span>
+              <span class="font-medium text-gray-600">💾 Versi Database</span>
               <span id="dbVersion" class="text-gray-500">-</span>
             </li>
             <li class="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span class="font-medium text-gray-600">?? Tahun Rilis</span>
+              <span class="font-medium text-gray-600">📅 Tahun Rilis</span>
               <span id="appYear" class="text-gray-500">-</span>
             </li>
             <li class="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span class="font-medium text-gray-600">????? Developer</span>
+              <span class="font-medium text-gray-600">👨‍💻 Developer</span>
               <span id="appDev" class="text-gray-500">-</span>
             </li>
             <li class="flex justify-between items-center pt-2">
-              <span class="font-medium text-gray-600">?? Status</span>
+              <span class="font-medium text-gray-600">🔌 Status</span>
               <span id="appOnline" class="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-600 border border-green-200">Online</span>
             </li>
           </ul>
@@ -284,7 +330,7 @@
 
           <div class="flex justify-between items-center mb-6 border-b pb-3">
             <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <span class="text-blue-600">??</span> Rekap Nilai Rerata
+              <span class="text-blue-600">📊</span> Rekap Nilai Rerata
             </h2>
 
             <div class="flex items-center gap-2 text-xs text-gray-400 italic">
@@ -311,7 +357,7 @@
         <div id="chartSiswaWrapper" class="hidden">
           <div class="bg-white p-4 rounded-xl shadow mt-4">
             <h3 class="text-lg font-bold mb-3">
-              ?? Grafik Nilai Siswa
+              📊 Grafik Nilai Siswa
             </h3>
             <div style="height:300px;">
               <canvas id="chartNilaiSiswa"></canvas>
@@ -341,52 +387,52 @@
     <div class="flex gap-2 mb-4">
       <button onclick="showTab('nilai')" id="tabNilai"
         class="px-4 py-2 rounded bg-blue-600 text-white transition">
-        ?? Nilai
+        📘 Nilai
       </button>
 
       <button onclick="showTab('absensi')" id="tabAbsensi"
         class="px-4 py-2 rounded bg-gray-300 transition">
-        ?? Absensi
+        📅 Absensi
       </button>
 
       <button onclick="showTab('pesanmapel')" id="tabPesanMapel"
         class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        ?? Pesan Mapel
+        📨 Pesan Mapel
       </button>
 
       <button onclick="showTab('tp')" id="tabTp"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden"> ?? TP
+        class="px-4 py-2 rounded bg-gray-300 transition hidden"> 📊 TP
       </button>
 
       <button onclick="showTab('datasiswa')" id="tabDatasiswa"
         class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        ?? Data Siswa
+        🎓 Data Siswa
       </button>
 
       <button onclick="showTab('identitas')" id="tabIdentitas"
         class="px-4 py-2 rounded bg-gray-300 transition">
-        ?? Identitas
+        🏫 Identitas
       </button>
 
       <button onclick="showTab('users')" id="tabUsers"
         class="px-4 py-2 rounded bg-gray-300 transition">
-        ?? Users
+        👥 Users
       </button>
 
       <button onclick="showTab('appinfo')" id="tabAppInfo"
         class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        ?? App Info
+        ⚙️ App Info
       </button>
 
       <button onclick="showTab('mapel')" id="tabMapel"
         class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        ?? Mapel
+        📚 Mapel
       </button>
 
       <button onclick="showTab('nilaisiswa')"
         id="tabNilaiSaya"
         class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        ?? Nilai Saya
+        📊 Nilai Saya
       </button>
     </div>
 
@@ -394,7 +440,7 @@
     <section id="tab-content-nilai" class="space-y-4">
 
       <h2 class="text-xl md:text-2xl font-bold text-gray-800">
-        ?? Tabel Nilai Siswa
+        📘 Tabel Nilai Siswa
       </h2>
 
       <div class="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded border">
@@ -464,15 +510,15 @@
           <div class="flex flex-wrap gap-2 justify-end">
             <button id="btnLegerRangking" onclick="unduhLegerDanRangking()"
               class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 font-semibold flex items-center gap-1 transition shadow-sm">
-              ?? Leger & Rangking
+              📊 Leger & Rangking
             </button>
 
             <button onclick="editSemuaNilai()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
-              ?? Edit
+              ✏️ Edit
             </button>
 
             <button onclick="simpanSemuaNilai()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-              ?? Simpan
+              💾 Simpan
             </button>
           </div>
         </div>
@@ -540,7 +586,7 @@
 
       <!-- Judul -->
       <h2 class="text-xl md:text-2xl font-bold text-gray-800">
-        ?? Tabel Absensi Siswa
+        📅 Tabel Absensi Siswa
       </h2>
 
       <!-- Filter -->
@@ -594,13 +640,13 @@
             <div>
               <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                 <button onclick="absensiPrevPage()" class="relative inline-flex items-center rounded-l-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                   
+                  «
                 </button>
                 <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300">
                   Halaman <span id="absensiCurrentPage" class="mx-1 font-bold text-indigo-600">1</span> dari <span id="absensiTotalPages" class="mx-1">1</span>
                 </span>
                 <button onclick="absensiNextPage()" class="relative inline-flex items-center rounded-r-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                   
+                  »
                 </button>
               </nav>
             </div>
@@ -614,7 +660,7 @@
     <!-- ================= TAB PESAN MAPEL ================= -->
     <section id="tab-content-pesanmapel" class="hidden space-y-4">
       <h2 class="text-2xl font-bold text-gray-800">
-        ?? Pesan Mata Pelajaran
+        📨 Pesan Mata Pelajaran
       </h2>
 
       <!-- BOX PILIH MAPEL -->
@@ -627,14 +673,14 @@
         </div>
         <button onclick="simpanPesanMapel()"
           class="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-          ?? Simpan Pesanan
+          💾 Simpan Pesanan
         </button>
       </div>
 
       <!-- TABEL HASIL -->
       <div class="bg-white rounded-xl shadow p-5">
         <h3 class="font-bold text-lg mb-4">
-          ?? Mapel Yang Sudah Dipilih
+          📋 Mapel Yang Sudah Dipilih
         </h3>
         <div class="overflow-auto">
           <table class="w-full text-sm border">
@@ -654,7 +700,7 @@
     <!-- ================= TAB TP ================= -->
     <section id="tab-content-tp" class="hidden">
 
-    <h2 class="text-lg font-bold mb-2">?? Tujuan Pembelajaran</h2>
+    <h2 class="text-lg font-bold mb-2">📊 Tujuan Pembelajaran</h2>
 
     <div class="flex justify-end mb-2">
       
@@ -664,7 +710,7 @@
 
         <button onclick="uploadTPExcel()"
           class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-          ?? Unggah Excel TP
+          ⬆️ Unggah Excel TP
         </button>
       </div>
 
@@ -672,7 +718,7 @@
         <button id="btnDownloadTP"
           onclick="downloadTPExcel()"
           class="bg-green-600 text-white px-3 py-1 rounded">
-          ?? Unduh Excel TP
+          ⬇️ Unduh Excel TP
         </button>
       </div>
     </div>
@@ -707,7 +753,7 @@
   <!-- ================= TAB DATA SISWA ================= -->
   <section id="tab-content-datasiswa" class="hidden space-y-4">
 
-    <h2 class="text-xl font-bold">?? Manajemen Data Siswa</h2>
+    <h2 class="text-xl font-bold">🎓 Manajemen Data Siswa</h2>
     
       <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-4">
 
@@ -718,7 +764,7 @@
         <input
           type="text"
           id="searchSiswa"
-          placeholder="?? Cari NIS / Nama / Kelas..."
+          placeholder="🔍 Cari NIS / Nama / Kelas..."
           onkeyup="renderSiswaTable()"
           class="border px-4 py-2 rounded-lg w-full md:w-72 focus:ring-2 focus:ring-blue-400 outline-none">
 
@@ -775,7 +821,7 @@
           onclick="uploadSiswaExcel()"
           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
 
-          ?? Unggah
+          ⬆️ Unggah
 
         </button>
 
@@ -784,7 +830,7 @@
           onclick="tambahSiswaForm()"
           class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
 
-          ? Tambah
+          ➕ Tambah
 
         </button>
 
@@ -816,12 +862,12 @@
           <button
             onclick="prevSiswaPage()"
             class="bg-gray-200 px-3 py-2 rounded hover:bg-gray-300">
-            ? Prev
+            ⬅ Prev
           </button>
           <button
             onclick="nextSiswaPage()"
             class="bg-gray-200 px-3 py-2 rounded hover:bg-gray-300">
-            Next ?
+            Next ➡
           </button>
         </div>
       </div>
@@ -832,14 +878,14 @@
   <section id="tab-content-identitas" class="hidden space-y-4">
 
     <h2 class="text-xl md:text-2xl font-bold text-gray-800">
-      ?? Identitas Sekolah
+      🏫 Identitas Sekolah
     </h2>
 
-    <!-- ?? UPLOAD IDENTITAS (POSISI BARU) -->
+    <!-- 🔼 UPLOAD IDENTITAS (POSISI BARU) -->
     <div class="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded border">
 
       <span class="font-semibold text-sm text-gray-700">
-        ?? Unggah Identitas:
+        📤 Unggah Identitas:
       </span>
 
       <input type="file" id="excelUploadIdentitas"
@@ -848,7 +894,7 @@
 
       <button onclick="uploadIdentitasExcel()"
         class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
-        ?? Unggah
+        ⬆️ Unggah
       </button>
 
       <!-- OPTIONAL INFO -->
@@ -860,7 +906,7 @@
 
     <!-- FORM IDENTITAS -->
     <div id="formIdentitas" class="bg-white p-6 rounded-xl shadow-lg">
-      <h2 class="text-xl font-bold mb-4 text-gray-700">?? Edit Data Sekolah</h2>
+      <h2 class="text-xl font-bold mb-4 text-gray-700">🏫 Edit Data Sekolah</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[450px] overflow-y-auto pr-2">
         <div>
           <label class="text-sm text-gray-600">Nama Sekolah</label>
@@ -957,14 +1003,14 @@
 
       <button onclick="simpanIdentitas()" 
         class="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
-        ?? Simpan Data Sekolah
+        💾 Simpan Data Sekolah
       </button>
     </div>
   </section>
 
   <!-- TAB MAPEL -->
   <section id="tab-content-mapel" class="hidden space-y-4">
-  <h2 class="text-xl font-bold">?? Manajemen Mata Pelajaran</h2>
+  <h2 class="text-xl font-bold">📚 Manajemen Mata Pelajaran</h2>
   <!-- FORM TAMBAH -->
   <div class="bg-white p-4 rounded shadow flex gap-2">
     <input type="text" id="namaMapelBaru"
@@ -973,7 +1019,7 @@
 
     <button onclick="tambahMapel()"
       class="bg-green-600 text-white px-4 py-2 rounded">
-      ? Tambah
+      ➕ Tambah
     </button>
   </div>
 
@@ -995,7 +1041,7 @@
 <section id="tab-content-nilaisiswa" class="hidden space-y-4">
   <div class="bg-white rounded-xl shadow p-4">
     <h2 class="text-xl font-bold mb-4">
-      ?? Nilai Saya
+      📊 Nilai Saya
     </h2>
     <div class="overflow-auto">
       <table class="w-full border text-sm">
@@ -1015,11 +1061,11 @@
   <!-- ================= MODAL TP ================= -->
   <div id="modalTP" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
     <div class="bg-white p-4 rounded w-[90%] max-w-3xl">
-      <h2 class="text-lg font-bold mb-2">?? Edit TP</h2>
+      <h2 class="text-lg font-bold mb-2">✏️ Edit TP</h2>
       <div id="modalContentTP" class="grid grid-cols-1 gap-2 max-h-[60vh] overflow-auto"></div>
       <div class="mt-3 flex justify-end gap-2">
         <button onclick="closeModalTP()" class="px-3 py-1 bg-gray-400 text-white rounded">Batal</button>
-        <button onclick="saveModalTP()" class="px-3 py-1 bg-blue-600 text-white rounded">?? Simpan</button>
+        <button onclick="saveModalTP()" class="px-3 py-1 bg-blue-600 text-white rounded">💾 Simpan</button>
       </div>
     </div>
   </div>
@@ -1027,7 +1073,7 @@
   <!-- ================= MODAL DATA SISWA ================= -->
   <div id="modalSiswa" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white w-[95%] max-w-4xl rounded-xl shadow-lg p-6">
-      <h2 class="text-xl font-bold mb-4">?? Edit Data Siswa</h2>
+      <h2 class="text-xl font-bold mb-4">✏️ Edit Data Siswa</h2>
       <div id="formSiswa" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
         <input id="s_nis" placeholder="NIS" class="border p-2 rounded" disabled>
         <input id="s_nama" placeholder="Nama" class="border p-2 rounded">
@@ -1050,7 +1096,7 @@
 
       <div class="flex justify-end gap-2 mt-4">
         <button onclick="closeModalSiswa()" class="bg-gray-400 text-white px-4 py-2 rounded">Batal</button>
-        <button onclick="simpanEditSiswa()" class="bg-blue-600 text-white px-4 py-2 rounded">?? Simpan</button>
+        <button onclick="simpanEditSiswa()" class="bg-blue-600 text-white px-4 py-2 rounded">💾 Simpan</button>
       </div>
     </div>
   </div>
@@ -1058,7 +1104,7 @@
     <!-- ================= TAB USERS ================= -->
     <section id="tab-content-users" class="hidden space-y-4">
       <h2 class="text-xl md:text-2xl font-bold text-gray-800">
-        ?? Manajemen User
+        👥 Manajemen User
       </h2>
 
       <!-- ================= FILTER & PAGINATION USERS ================= -->
@@ -1073,11 +1119,11 @@
             onkeyup="renderUsersTable()"
             class="border rounded-lg px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-          <!-- ?? SIMPAN SEMUA -->
+          <!-- 🔥 SIMPAN SEMUA -->
           <button
             onclick="simpanSemuaUsers()"
             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow transition">
-            ?? Simpan Semua
+            💾 Simpan Semua
           </button>
         </div>
 
@@ -1130,13 +1176,13 @@
             <button
               onclick="prevUserPage()"
               class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-lg text-sm">
-              ? Prev
+              ⬅ Prev
             </button>
 
             <button
               onclick="nextUserPage()"
               class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-lg text-sm">
-              Next ?
+              Next ➡
             </button>
           </div>
         </div>
@@ -1146,7 +1192,7 @@
     <!-- ================= TAB APP INFO ================= -->
     <section id="tab-content-appinfo" class="hidden space-y-4">
       <h2 class="text-xl md:text-2xl font-bold text-gray-800">
-        ?? Informasi Aplikasi
+        ⚙️ Informasi Aplikasi
       </h2>
       <div class="bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-4">
         <input id="appNama" placeholder="Nama Aplikasi" class="border p-2 rounded">
@@ -1162,7 +1208,7 @@
       </div>
       <button onclick="simpanAppInfo()"
         class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-        ?? Simpan
+        💾 Simpan
       </button>
     </section>
   </div>
@@ -1189,7 +1235,7 @@
     let absensiCurrentPage = 1;       // Menyimpan status halaman aktif
     const absensiRowsPerPage = 10;    // Jumlah data per halaman (bisa diubah misal jadi 15 atau 20)
 
-    // ? NOTIF SUKSES
+    // ✅ NOTIF SUKSES
     function notifSukses(msg) {
       Swal.fire({
         icon: 'success',
@@ -1200,7 +1246,7 @@
       });
     }
 
-    // ? NOTIF ERROR
+    // ❌ NOTIF ERROR
     function notifError(msg) {
       Swal.fire({
         icon: 'error',
@@ -1209,7 +1255,7 @@
       });
     }
 
-    // ?? NOTIF WARNING
+    // ⚠️ NOTIF WARNING
     function notifWarning(msg) {
       Swal.fire({
         icon: 'warning',
@@ -1218,7 +1264,7 @@
       });
     }
 
-    // ? NOTIF KONFIRMASI
+    // ❓ NOTIF KONFIRMASI
     function notifConfirm(msg) {
       return Swal.fire({
         title: msg,
@@ -1229,7 +1275,7 @@
       });
     }
 
-    // ? LOADING
+    // ⏳ LOADING
     function notifLoading(msg = "Memproses...") {
       Swal.fire({
         title: msg,
@@ -1240,7 +1286,7 @@
       });
     }
 
-    // ?? CLOSE LOADING
+    // 🔒 CLOSE LOADING
     function closeLoading() {
       Swal.close();
     }
@@ -1249,7 +1295,7 @@
   const kelas = document.getElementById("filterKelasAbsensi").value;
   const tbody = document.getElementById("tabelAbsensi");
 
-  // ?? VALIDASI
+  // 🔒 VALIDASI
   if (!kelas) {
     notifWarning("Pilih kelas terlebih dahulu");
     return;
@@ -1260,7 +1306,7 @@
     return;
   }
 
-  // ?? LOADING
+  // 🔥 LOADING
   notifLoading("Memuat data absensi...");
 
   google.script.run
@@ -1290,7 +1336,7 @@ function renderTabelAbsensiPerHalaman() {
   tbody.innerHTML = "";
   const totalRows = dataAbsensiLengkap.length;
 
-  // ?? DATA KOSONG
+  // 🔥 DATA KOSONG
   if (totalRows === 0) {
     tbody.innerHTML = `
       <tr>
@@ -1341,7 +1387,7 @@ function renderTabelAbsensiPerHalaman() {
       <td>
         <button onclick="simpanAbsensi('${s.nis}','${s.nama}','${s.kelas}', this)"
           class="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-          ??
+          💾
         </button>
       </td>
     `;
@@ -1356,7 +1402,7 @@ function renderTabelAbsensiPerHalaman() {
   document.getElementById("absensiCurrentPage").innerText = absensiCurrentPage;
   document.getElementById("absensiTotalPages").innerText = totalPages;
 
-  // ?? efek animasi ringan
+  // 🔥 efek animasi ringan
   tbody.classList.remove("animate-fade");
   void tbody.offsetWidth; // Trigger reflow animasi
   tbody.classList.add("animate-fade");
@@ -1385,7 +1431,7 @@ function renderTabelAbsensiPerHalaman() {
 
           notifSukses("Absensi berhasil disimpan");
 
-          // ?? highlight baris
+          // 🔥 highlight baris
           const tr = btn.closest("tr");
           tr.classList.add("bg-green-50");
           setTimeout(() => tr.classList.remove("bg-green-50"), 1000);
@@ -1397,7 +1443,7 @@ function renderTabelAbsensiPerHalaman() {
         .saveAbsensi(data);
     }
 
-    // ?? Otentikasi Manual
+    // 🚀 Otentikasi Manual
     function handleLogin() {
 
       const userId = document.getElementById('userId').value.trim();
@@ -1414,15 +1460,15 @@ function renderTabelAbsensiPerHalaman() {
 
           closeLoading();
 
-          // ?? USER TIDAK DITEMUKAN
+          // 🔒 USER TIDAK DITEMUKAN
           if (!user) {
             notifError("ID Pengguna tidak ditemukan!");
             return;
           }
 
-          // ?? USER DIBLOKIR
+          // 🔒 USER DIBLOKIR
           if (user.blocked) {
-            notifError("? Akun Anda masih diblokir.");
+            notifError("⛔ Akun Anda masih diblokir.");
             return;
           }
 
@@ -1451,7 +1497,7 @@ function renderTabelAbsensiPerHalaman() {
           document.getElementById("tabPesanMapel")
             .classList.remove("hidden");
 
-          notifSukses(`Selamat datang, ${user.nama} ??`);
+          notifSukses(`Selamat datang, ${user.nama} 👋`);
 
           // ================= LOG AKSES =================
           google.script.run.logUserAccess({
@@ -1624,7 +1670,7 @@ function renderTabelAbsensiPerHalaman() {
       const mapelSelect =
         document.getElementById("filterMapel");
 
-      // ?? VALIDASI
+      // 🔒 VALIDASI
       if (!kelasSelect || !mapelSelect) return;
 
       // RESET
@@ -1760,7 +1806,7 @@ function renderTabelAbsensiPerHalaman() {
       
       const input = document.getElementById("excelUpload");
 
-      // ? VALIDASI INPUT AWAL
+      // ❌ VALIDASI INPUT AWAL
       if (!mapelPilihan) {
         notifWarning("Pilih mapel dulu.");
         return;
@@ -1779,7 +1825,7 @@ function renderTabelAbsensiPerHalaman() {
       const file = input.files[0];
       const reader = new FileReader();
 
-      // ?? LOADING ANIMASI DINAMIS (Menggunakan SweetAlert2 bawaan Anda)
+      // 🔄 LOADING ANIMASI DINAMIS (Menggunakan SweetAlert2 bawaan Anda)
       Swal.fire({
         title: 'Memproses File Excel...',
         html: 'Sistem sedang memvalidasi Mapel & Kelas.<br><b>Mohon tunggu sebentar...</b>',
@@ -1804,7 +1850,7 @@ function renderTabelAbsensiPerHalaman() {
             return;
           }
 
-          // ?? MEMBUAT SUMBER TEKS FILE EXCEL UNTUK VALIDASI
+          // 🔍 MEMBUAT SUMBER TEKS FILE EXCEL UNTUK VALIDASI
           const namaFileKecil = file.name.toLowerCase();
           const namaSheetKecil = firstSheetName.toLowerCase();
           const headers = Object.keys(jsonData[0]).join(" ").toLowerCase();
@@ -1812,12 +1858,12 @@ function renderTabelAbsensiPerHalaman() {
           // Gabungkan nama file, nama tab sheet, dan isi baris pertama (header kolom)
           const isiTeksExcel = `${namaFileKecil} ${namaSheetKecil} ${headers}`;
 
-          // 1?? VALIDASI KECOCOKAN MAPEL
+          // 1️⃣ VALIDASI KECOCOKAN MAPEL
           if (!isiTeksExcel.includes(namaMapelTeks)) {
             Swal.close();
             Swal.fire({
               icon: 'error',
-              title: 'Salah Mapel! ?',
+              title: 'Salah Mapel! ❌',
               html: `Anda memilih mapel <b>${mapelSelect.options[mapelSelect.selectedIndex].text}</b>,<br>tetapi file Excel yang diupload terdeteksi sebagai mapel lain.<br><br><small class="text-gray-500">Pastikan nama file atau kolom Excel mengandung kata "${namaMapelTeks}".</small>`,
               confirmButtonColor: '#ef4444'
             });
@@ -1825,7 +1871,7 @@ function renderTabelAbsensiPerHalaman() {
             return;
           }
 
-          // 2?? VALIDASI KECOCOKAN KELAS
+          // 2️⃣ VALIDASI KECOCOKAN KELAS
           // Menghapus spasi dan tanda baca agar pencocokan fleksibel (misal "kelas 4-a", "4a", atau "kelas 4a" tetap cocok)
           const teksKelasBersih = namaKelasTeks.replace(/[^a-z0-9]/g, "");
           const isiTeksExcelBersih = isiTeksExcel.replace(/[^a-z0-9]/g, "");
@@ -1834,7 +1880,7 @@ function renderTabelAbsensiPerHalaman() {
             Swal.close();
             Swal.fire({
               icon: 'error',
-              title: 'Salah Kelas! ?',
+              title: 'Salah Kelas! ❌',
               html: `Anda memilih <b>${kelasSelect.options[kelasSelect.selectedIndex].text}</b>,<br>tetapi file Excel yang diupload terdeteksi milik kelas lain.<br><br><small class="text-gray-500">Pastikan nama file, nama sheet, atau baris Excel menyertakan identitas "${namaKelasTeks}".</small>`,
               confirmButtonColor: '#ef4444'
             });
@@ -1842,7 +1888,7 @@ function renderTabelAbsensiPerHalaman() {
             return;
           }
 
-          // ? JIKA MAPEL DAN KELAS SUDAH VALID, KIRIM DATA KE BACKEND
+          // ✅ JIKA MAPEL DAN KELAS SUDAH VALID, KIRIM DATA KE BACKEND
           google.script.run
             .withSuccessHandler(msg => {
               Swal.close();
@@ -1850,7 +1896,7 @@ function renderTabelAbsensiPerHalaman() {
               const pesanSukses = msg || "Data Excel berhasil diproses ke server.";
 
               notifSukses(`
-                <b>? Upload Berhasil!</b><br>
+                <b>✅ Upload Berhasil!</b><br>
                 ${pesanSukses}
               `);
               
@@ -1876,7 +1922,7 @@ function renderTabelAbsensiPerHalaman() {
     function uploadSiswaExcel() {
       const input = document.getElementById('excelUploadSiswa');
 
-      // ? VALIDASI
+      // ❌ VALIDASI
       if (!input.files || !input.files[0]) {
         notifWarning("Pilih file Excel terlebih dahulu.");
         return;
@@ -1885,7 +1931,7 @@ function renderTabelAbsensiPerHalaman() {
       const file = input.files[0];
       const reader = new FileReader();
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Memproses data siswa...");
 
       reader.onload = function(e) {
@@ -1900,7 +1946,7 @@ function renderTabelAbsensiPerHalaman() {
           // Konversi ke JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-          // ?? KIRIM KE BACKEND
+          // 🚀 KIRIM KE BACKEND
           google.script.run
             .withSuccessHandler(msg => {
               closeLoading();
@@ -1928,7 +1974,7 @@ function renderTabelAbsensiPerHalaman() {
     function uploadIdentitasExcel() {
       const input = document.getElementById('excelUploadIdentitas');
 
-      // ? VALIDASI
+      // ❌ VALIDASI
       if (!input.files || !input.files[0]) {
         notifWarning("Pilih file Excel identitas terlebih dahulu.");
         return;
@@ -1937,7 +1983,7 @@ function renderTabelAbsensiPerHalaman() {
       const file = input.files[0];
       const reader = new FileReader();
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Memproses identitas sekolah...");
 
       reader.onload = function(e) {
@@ -1948,7 +1994,7 @@ function renderTabelAbsensiPerHalaman() {
           const worksheet = workbook.Sheets[firstSheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-          // ?? KIRIM KE BACKEND
+          // 🚀 KIRIM KE BACKEND
           google.script.run
             .withSuccessHandler(msg => {
               closeLoading();
@@ -1972,14 +2018,14 @@ function renderTabelAbsensiPerHalaman() {
       reader.readAsArrayBuffer(file);
     }
 
-    // ?? Logout
+    // 🚪 Logout
     function logout() {
 
       notifConfirm("Yakin ingin logout?")
         .then(result => {
 
           if (!result.isConfirmed) return;
-          // ? loading
+          // ⏳ loading
           notifLoading("Keluar dari aplikasi...");
           setTimeout(() => {
             closeLoading();
@@ -2019,16 +2065,16 @@ function renderTabelAbsensiPerHalaman() {
               ?.classList.remove('hidden');
             // reset input
             document.getElementById('userId').value = "";
-            notifSukses("Berhasil logout ??");
+            notifSukses("Berhasil logout 👋");
           }, 500);
         });
     }
 
-    // ? Auto login jika sudah ada di localStorage
+    // ⏳ Auto login jika sudah ada di localStorage
     window.onload = function () {
       const userId = localStorage.getItem("userId");
       if (!userId) return;
-      // ?? LOAD HEADER DARI CACHE DULU
+      // 🔥 LOAD HEADER DARI CACHE DULU
       const cache = localStorage.getItem("identitasSekolah");
 
       if (cache) {
@@ -2299,7 +2345,7 @@ function renderTabelAbsensiPerHalaman() {
         }
 
         // =====================================================================
-        // ?? PROTEKSI UTAMA GURU: KHUSUS GURU PJOK DAN PADBP
+        // 🔒 PROTEKSI UTAMA GURU: KHUSUS GURU PJOK DAN PADBP
         // Sembunyikan Tombol Leger & Rangking dari pandangan mereka secara instan
         // =====================================================================
         if (mapel === "pjok" || mapel === "padbp" || mapel.includes("pjok") || mapel.includes("padbp")) {
@@ -2370,7 +2416,7 @@ function renderTabelAbsensiPerHalaman() {
         document.getElementById("tabNilaiSaya")
           ?.classList.remove("hidden");
 
-        // ? SISWA TIDAK BOLEH MELIHAT
+        // ❌ SISWA TIDAK BOLEH MELIHAT
         document.getElementById('btnSinkronisasi')
           ?.classList.add('hidden');
 
@@ -2384,10 +2430,10 @@ function renderTabelAbsensiPerHalaman() {
       }
     }
 
-    // ?? Ambil Data Sekolah
+    // 🌐 Ambil Data Sekolah
     function getIdentitasSekolah() {
       google.script.run.withSuccessHandler(data => {
-        // ?? SIMPAN KE LOCALSTORAGE
+        // 🔥 SIMPAN KE LOCALSTORAGE
         localStorage.setItem("identitasSekolah", JSON.stringify(data));
         renderIdentitas(data);
       }).getIdentitasSekolah();
@@ -2397,14 +2443,14 @@ function renderTabelAbsensiPerHalaman() {
       if (!data) return;
       document.getElementById("namaSekolah").textContent = data["Nama Sekolah"] || "-";
       document.getElementById("alamatSekolah").textContent = data["Alamat Sekolah"] || "-";
-      document.getElementById("emailSekolah").textContent = `${data["Email"] || "-"}   ${data["Web"] || "-"}`;
+      document.getElementById("emailSekolah").textContent = `${data["Email"] || "-"} • ${data["Web"] || "-"}`;
       document.getElementById("kepalaSekolah").textContent = data["Nama Kepala Sekolah"] || "-";
       document.getElementById("nipKepalaSekolah").textContent = data["NIP Kepala Sekolah"] || "-";
       document.getElementById("tahunAjaran").textContent = data["Tahun Ajaran"] || "-";
       document.getElementById("semester").textContent = data["Semester"] || "-";
     }
 
-    // ?? Ambil Kelas
+    // 📌 Ambil Kelas
     function getKelas() {
       google.script.run.withSuccessHandler(kelasList => {
         const select = document.getElementById("filterKelas");
@@ -2418,7 +2464,7 @@ function renderTabelAbsensiPerHalaman() {
       }).getKelas();
     }
 
-    // ?? Ambil Mapel
+    // 📌 Ambil Mapel
     function getMapelList() {
       google.script.run.withSuccessHandler(mapelList => {
         const select = document.getElementById("filterMapel");
@@ -2437,7 +2483,7 @@ function renderTabelAbsensiPerHalaman() {
   const mapel = document.getElementById("filterMapel").value;
   const tbody = document.getElementById("tabelNilai");
 
-  // ?? VALIDASI
+  // 🔒 VALIDASI
   if (!kelas || !mapel) {
     notifWarning("Pilih kelas dan mapel terlebih dahulu");
     return;
@@ -2448,16 +2494,16 @@ function renderTabelAbsensiPerHalaman() {
     return;
   }
 
-  // ?? USER INFO
+  // 🔥 USER INFO
   const role = (localStorage.getItem("roleUser") || "").toLowerCase();
   const mapelUser = (localStorage.getItem("mapelUser") || "").toLowerCase().trim();
 
-  // ?? MAPEL YANG TIDAK BOLEH CETAK RAPOR
+  // 🔥 MAPEL YANG TIDAK BOLEH CETAK RAPOR
   const mapelTerlarang = ["pjok", "padbp"];
 
   const hideCetak = role === "guru" && mapelTerlarang.includes(mapelUser);
 
-  // ?? LOADING
+  // 🔥 LOADING
   notifLoading("Memuat data nilai siswa...");
 
   google.script.run
@@ -2498,7 +2544,7 @@ function renderPaginasiNilai(mapel, hideCetak) {
   const startIdx = (nilaiSiswaCurrentPageNum - 1) * nilaiSiswaRowsPerPage;
   const endIdx = Math.min(startIdx + nilaiSiswaRowsPerPage, totalRows);
 
-  // ?? DATA KOSONG
+  // 🔥 DATA KOSONG
   if (totalRows === 0) {
     tbody.innerHTML = `
       <tr>
@@ -2541,18 +2587,18 @@ function renderPaginasiNilai(mapel, hideCetak) {
       <td class="border px-2 py-1 space-x-1">
         <button onclick="simpanNilai('${siswa.nis}', '${siswa.nama}', '${siswa.kelas}', '${mapel}')" 
           class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
-          ??
+          💾
         </button>
 
         <button onclick="editNilai('${siswa.nis}')" 
           class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">
-          ??
+          ✏️
         </button>
 
         ${!hideCetak ? `
           <button onclick="cetakRapor('${siswa.nis}')" 
             class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
-            ???
+            🖨️
           </button>
         ` : ``}
       </td>
@@ -2561,7 +2607,7 @@ function renderPaginasiNilai(mapel, hideCetak) {
     tbody.appendChild(tr);
   });
 
-  // ?? Efek halus bawaan Anda
+  // 🔥 Efek halus bawaan Anda
   tbody.classList.remove("animate-fade");
   void tbody.offsetWidth; // Trigger reflow agar animasi Tailwind berjalan ulang
   tbody.classList.add("animate-fade");
@@ -2617,7 +2663,7 @@ function nilaiSiswaNextPage() {
   }
 }
 
-    // ?? Aktifkan Mode Edit
+    // ✏️ Aktifkan Mode Edit
     function editNilai(nis) {
       for (let i = 1; i <= 10; i++) {
         const input = document.getElementById(`tp${i}-${nis}`);
@@ -2627,15 +2673,15 @@ function nilaiSiswaNextPage() {
       }
     }
 
-    // ?? Simpan Nilai
+    // 💾 Simpan Nilai
     function simpanNilai(nis, nama, kelas, mapel) {
       const tps = [];
 
-      // ?? ambil baris (untuk efek nanti)
+      // 🔥 ambil baris (untuk efek nanti)
       const btn = event.target;
       const tr = btn.closest("tr");
 
-      // ?? VALIDASI NILAI
+      // 🔒 VALIDASI NILAI
       for (let i = 1; i <= 10; i++) {
         const input = document.getElementById(`tp${i}-${nis}`);
         const nilai = input.value;
@@ -2649,7 +2695,7 @@ function nilaiSiswaNextPage() {
           tps.push("");
         } else {
           input.classList.add("border-red-500");
-          notifError(`Nilai TP${i} untuk ${nama} tidak valid (0 100).`);
+          notifError(`Nilai TP${i} untuk ${nama} tidak valid (0–100).`);
           return;
         }
       }
@@ -2679,7 +2725,7 @@ function nilaiSiswaNextPage() {
       lanjutSimpanNilai(data, tr, nama);
     }
 
-    // ?? Aktifkan mode edit untuk semua siswa
+    // ✏️ Aktifkan mode edit untuk semua siswa
     function editSemuaNilai() {
       const inputs = document.querySelectorAll('#tabelNilai input[type="number"]');
       inputs.forEach(input => {
@@ -2688,7 +2734,7 @@ function nilaiSiswaNextPage() {
       notifConfirm("Mode edit diaktifkan untuk semua siswa.");
     }
 
-    // ?? Simpan semua nilai sekaligus
+    // 💾 Simpan semua nilai sekaligus
     function simpanSemuaNilai() {
       const kelasFilter = document.getElementById("filterKelas").value;
       const mapelFilter = document.getElementById("filterMapel").value;
@@ -2701,7 +2747,7 @@ function nilaiSiswaNextPage() {
       const rows = document.querySelectorAll("#tabelNilai tr");
       const semuaData = [];
 
-      // ?? VALIDASI ERROR FLAG
+      // 🔥 VALIDASI ERROR FLAG
       let valid = true;
 
       rows.forEach(tr => {
@@ -2739,15 +2785,15 @@ function nilaiSiswaNextPage() {
         semuaData.push({ nis, nama, kelas, mapel, tps });
       });
 
-      // ? stop kalau ada error
+      // ❌ stop kalau ada error
       if (!valid) return;
 
-      // ? CONFIRM
+      // ✅ CONFIRM
       notifConfirm("Simpan semua nilai siswa?")
         .then(result => {
           if (!result.isConfirmed) return;
 
-          // ?? LOADING
+          // 🔥 LOADING
           notifLoading("Menyimpan semua nilai...");
 
           google.script.run
@@ -2844,23 +2890,23 @@ function nilaiSiswaNextPage() {
       google.script.run
         .withSuccessHandler(msg => {
           hideLoading();
-          notifSukses("? Berhasil sinkronisasi: " + msg);
+          notifSukses("✅ Berhasil sinkronisasi: " + msg);
         })
         .withFailureHandler(err => {
           hideLoading();
-          notifError("? Gagal: " + err.message);
+          notifError("❌ Gagal: " + err.message);
         })
-        .syncDataSiswaToMapel(mapel); // ?? fungsi di Code.gs
+        .syncDataSiswaToMapel(mapel); // 🔹 fungsi di Code.gs
     }
   
 function cetakRapor(nis) {
-// ?? VALIDASI AWAL
+// 🔴 VALIDASI AWAL
   if (!nis) {
     notifWarning("NIS siswa tidak ditemukan!");
     return;
   }
 
-  // ?? LOADING
+  // 🔵 LOADING
   notifLoading("Menyiapkan data rapor...");
 
   // ambil nama guru login
@@ -2885,7 +2931,7 @@ function cetakRapor(nis) {
     })
     .getRaporSiswa(nis, namaGuru);
 
-  // 1?? Ambil data rapor utama
+  // 1️⃣ Ambil data rapor utama
 
   google.script.run
     .withSuccessHandler(data => {
@@ -2893,7 +2939,7 @@ function cetakRapor(nis) {
       // tutup loading
       closeLoading();
 
-      // ? DATA KOSONG
+      // ❌ DATA KOSONG
       if (!data) {
         notifError("Data siswa tidak ditemukan.");
         return;
@@ -2901,7 +2947,7 @@ function cetakRapor(nis) {
 
       try {
 
-        // ?? Logika Catatan Rapor (TIDAK DIUBAH)
+        // 🔹 Logika Catatan Rapor (TIDAK DIUBAH)
         let catatanRapor = "";
         const kelasNum = parseInt(data.kelas);
 
@@ -2915,16 +2961,16 @@ function cetakRapor(nis) {
           }
         }
 
-        // ?? Ambil data login wali kelas
+        // 🔹 Ambil data login wali kelas
         const waliKelas = localStorage.getItem("namaUser") || "";
         const nipWali = localStorage.getItem("nipUser") || "";
 
         const absensi = data.absensi;
 
-        // ?? OPEN WINDOW
+        // 🟢 OPEN WINDOW
         const w = window.open("", "_blank", "width=800,height=1000");
 
-        // ? POPUP DIBLOKIR
+        // ❌ POPUP DIBLOKIR
         if (!w) {
           notifError("Popup diblokir browser! Izinkan popup untuk mencetak rapor.");
           return;
@@ -2984,12 +3030,6 @@ function cetakRapor(nis) {
         </head>
 
         <body>
-	<!-- Memuat aplikasi Google Apps Script Anda secara penuh (Full Screen) -->
-  	<iframe src="https://script.google.com/macros/s/AKfycbwDIGxJ7vIQPsb3Xz-5Ci-HEQruDQLrbYlvbnknr3pF91VnldaOzqKgoURnJv0nYGA/exec" 
-          title="Aplikasi Rapor Rakumaku" 
-          allow="fullscreen">
-  	</iframe>
-
 
         <!-- ====================== HALAMAN 1 ====================== -->
         <h3 style="text-align:center; margin-bottom:20px;">BIODATA PESERTA DIDIK</h3>
@@ -3036,8 +3076,8 @@ function cetakRapor(nis) {
             <p>
               ${data.identitas["Alamat Sekolah"] || ""}, ${data.identitas["Kecamatan"] || ""},
               ${data.identitas["Kabupaten/Kota"] || ""}, ${data.identitas["Provinsi"] || ""}<br>
-              Kode Pos ${data.identitas["Kode Pos"] || ""}   Telp. ${data.identitas["Telepon"] || ""}<br>
-              Email: ${data.identitas["Email"] || ""}   Web: ${data.identitas["Web"] || ""}
+              Kode Pos ${data.identitas["Kode Pos"] || ""} • Telp. ${data.identitas["Telepon"] || ""}<br>
+              Email: ${data.identitas["Email"] || ""} • Web: ${data.identitas["Web"] || ""}
             </p>
           </div>
         </div>
@@ -3267,7 +3307,7 @@ function cetakRapor(nis) {
         w.document.write(html);
         w.document.close();
 
-        // ?? SUKSES
+        // 🟢 SUKSES
         notifSukses("Rapor berhasil dibuat, silakan cetak");
 
       } catch (err) {
@@ -3334,7 +3374,7 @@ function cetakRapor(nis) {
         closeLoading();
 
         if (res.success) {
-          notifSukses("Registrasi berhasil! Cek email Anda ??");
+          notifSukses("Registrasi berhasil! Cek email Anda 📩");
           showLogin();
         } else {
           notifError(res.message);
@@ -3350,7 +3390,7 @@ function cetakRapor(nis) {
   </script>
   
   <script>
-  // ?? Load informasi aplikasi dari backend
+  // 🔹 Load informasi aplikasi dari backend
   function loadAppInfo() {
       google.script.run.withSuccessHandler(info => {
         if (!info) return;
@@ -3360,7 +3400,7 @@ function cetakRapor(nis) {
         document.getElementById("dbVersion").textContent  = info["Versi Database"] || "-";
         document.getElementById("appYear").textContent    = info["Tahun Rilis"] || new Date().getFullYear();
         document.getElementById("appDev").textContent     = info["Developer"] || "Tim Sekolah";
-        document.getElementById("appOnline").textContent  = info["Status"] || "? Online";
+        document.getElementById("appOnline").textContent  = info["Status"] || "✅ Online";
       }).getAppInfo();
     }
 
@@ -3382,7 +3422,7 @@ function loadChart() {
 
   const selectedKelas = document.getElementById("chartKelasSelect")?.value || "";
 
-  // ?? PROTEKSI FINAL
+  // 🔒 PROTEKSI FINAL
   let finalFilterKelas = "";
   if (role === "admin" || role === "superadmin") {
     finalFilterKelas = selectedKelas;
@@ -3584,12 +3624,12 @@ function showTab(tab) {
 }
 
 function capitalize(str) {
-  if (str === 'appinfo') return 'AppInfo'; // ?? FIX KHUSUS
+  if (str === 'appinfo') return 'AppInfo'; // 🔥 FIX KHUSUS
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function loadFormIdentitas() {
-  // ?? LOADING
+  // 🔥 LOADING
   notifLoading("Memuat identitas sekolah...");
 
   google.script.run
@@ -3601,7 +3641,7 @@ function loadFormIdentitas() {
         return;
       }
 
-      // ?? AMAN (ANTI ERROR ELEMENT NULL)
+      // 🔥 AMAN (ANTI ERROR ELEMENT NULL)
       const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.value = val || "";
@@ -3652,13 +3692,13 @@ function simpanIdentitas() {
     "Telepon": document.getElementById("teleponInput").value.trim()
   };
 
-  // ? VALIDASI MINIMAL
+  // ❌ VALIDASI MINIMAL
   if (!data["Nama Sekolah"]) {
     notifWarning("Nama sekolah wajib diisi!");
     return;
   }
 
-  // ? LOADING
+  // ⏳ LOADING
   notifLoading("Menyimpan identitas sekolah...");
 
   google.script.run
@@ -3860,7 +3900,7 @@ function renderUsersTable() {
           onclick="simpanUser('${u.idUser}')"
           class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
 
-          ??
+          💾
 
         </button>
 
@@ -3868,7 +3908,7 @@ function renderUsersTable() {
           onclick="hapusUser('${u.idUser}')"
           class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
 
-          ???
+          🗑️
 
         </button>
 
@@ -3948,18 +3988,18 @@ function updateUser(id) {
     link: ""
   };
 
-  // ? VALIDASI
+  // ❌ VALIDASI
   if (!data.nama) {
     notifWarning("Nama tidak boleh kosong!");
     return;
   }
 
-  // ? KONFIRMASI
+  // ❓ KONFIRMASI
   notifConfirm("Simpan perubahan user?")
     .then(result => {
       if (!result.isConfirmed) return;
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Menyimpan perubahan...");
 
       google.script.run
@@ -3984,7 +4024,7 @@ function hapusUser(id) {
     .then(result => {
       if (!result.isConfirmed) return;
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Menghapus user...");
 
       google.script.run
@@ -4016,18 +4056,18 @@ function simpanUser(id) {
     link: ""
   };
 
-  // ? VALIDASI
+  // ❌ VALIDASI
   if (!data.nama) {
     notifWarning("Nama tidak boleh kosong!");
     return;
   }
 
-  // ? KONFIRMASI
+  // ❓ KONFIRMASI
   notifConfirm("Simpan perubahan user?")
     .then(result => {
       if (!result.isConfirmed) return;
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Menyimpan data user...");
 
       google.script.run
@@ -4049,7 +4089,7 @@ function simpanUser(id) {
 
 function loadAppInfo() {
 
-  // ?? LOADING
+  // 🔥 LOADING
   notifLoading("Memuat informasi aplikasi...");
 
   google.script.run
@@ -4061,7 +4101,7 @@ function loadAppInfo() {
         return;
       }
 
-      // ?? helper aman (anti error element null)
+      // 🔥 helper aman (anti error element null)
       const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.value = val || "";
@@ -4106,18 +4146,18 @@ function simpanAppInfo() {
     "Status": document.getElementById("appStatus").value
   };
 
-  // ? VALIDASI
+  // ❌ VALIDASI
   if (!data["Nama Aplikasi"]) {
     notifWarning("Nama aplikasi wajib diisi!");
     return;
   }
 
-  // ? KONFIRMASI
+  // ❓ KONFIRMASI
   notifConfirm("Simpan perubahan informasi aplikasi?")
     .then(result => {
       if (!result.isConfirmed) return;
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Menyimpan informasi aplikasi...");
 
       google.script.run
@@ -4201,17 +4241,17 @@ function loadTP() {
           <td class="border px-1 text-center space-x-1">
             <button onclick="aksiEditTP(this)"
               class="bg-yellow-500 text-white px-2 py-1 rounded">
-              ??
+              ✏️
             </button>
 
             <button onclick="simpanTP(this)"
               class="bg-blue-600 text-white px-2 py-1 rounded">
-              ??
+              💾
             </button>
 
             <button onclick="hapusBarisTP(this)"
               class="bg-red-600 text-white px-2 py-1 rounded">
-              ???
+              🗑️
             </button>
           </td>
         `;
@@ -4236,7 +4276,7 @@ function loadTP() {
 }
 
 function aksiEditTP(btn) {
-  notifSukses("Mode edit dibuka ??");
+  notifSukses("Mode edit dibuka ✏️");
 
   openModalTP(btn);
 }
@@ -4256,21 +4296,21 @@ function simpanTP(btn) {
     data.tp.push(inputs[i].value.trim());
   }
 
-  // ?? RESET WARNA DULU (PENTING)
+  // 🔥 RESET WARNA DULU (PENTING)
   inputs.forEach(inp => inp.classList.remove("border-red-500"));
 
-  // ?? VALIDASI + HIGHLIGHT
+  // 🔥 VALIDASI + HIGHLIGHT
   if (!data.mapel || !data.kelas || !data.semester) {
 
     if (!data.mapel) inputs[0].classList.add("border-red-500");
     if (!data.kelas) inputs[1].classList.add("border-red-500");
     if (!data.semester) inputs[2].classList.add("border-red-500");
 
-    notifWarning("? Mapel, Kelas, Semester wajib diisi");
+    notifWarning("❗ Mapel, Kelas, Semester wajib diisi");
     return;
   }
 
-  // ? CONFIRM
+  // ✅ CONFIRM
   notifConfirm("Simpan data TP ini?")
     .then(result => {
       if (!result.isConfirmed) return;
@@ -4283,7 +4323,7 @@ function simpanTP(btn) {
 
           tr.dataset.new = "false";
 
-          notifSukses("? Data TP berhasil disimpan");
+          notifSukses("✅ Data TP berhasil disimpan");
 
           // efek visual
           tr.classList.add("bg-green-50");
@@ -4302,14 +4342,14 @@ function hapusBarisTP(btn) {
 
    console.log("Status baris:", tr.dataset.new);
 
-  // ?? JIKA BARIS BARU (BELUM DISIMPAN)
+  // 🔥 JIKA BARIS BARU (BELUM DISIMPAN)
   if (tr.dataset.new === "true") {
     tr.remove();
     notifSukses("Baris baru dihapus");
     return;
   }
 
-  // ?? JIKA DATA LAMA (ADA DI DATABASE)
+  // 🔥 JIKA DATA LAMA (ADA DI DATABASE)
   const inputs = tr.querySelectorAll("input");
 
   const data = {
@@ -4330,7 +4370,7 @@ function hapusBarisTP(btn) {
 
           tr.remove();
 
-          notifSukses(msg || "Data berhasil dihapus ???");
+          notifSukses(msg || "Data berhasil dihapus 🗑️");
         })
         .withFailureHandler(err => {
           closeLoading();
@@ -4380,7 +4420,7 @@ function saveModalTP() {
   closeModalTP();
 
   // 2. TAMPILKAN NOTIFIKASI BERHASIL (Sistem bawaan Anda)
-  notifSukses("? Perubahan TP berhasil diterapkan ke tabel");
+  notifSukses("✅ Perubahan TP berhasil diterapkan ke tabel");
 
   // 3. EFEK VISUAL (Opsional: Baris tabel berkedip hijau sebentar agar user tahu baris mana yang berubah)
   if (currentRowTP) {
@@ -4495,7 +4535,7 @@ function hapusSiswa(nis) {
     });
 }
 
-// ?? pisahkan biar aman
+// 🔥 pisahkan biar aman
 function prosesHapus(nis) {
   try {
     notifLoading("Menghapus data siswa...");
@@ -4530,7 +4570,7 @@ function notifConfirmHapus(pesan) {
 
 function editSiswa(nis) {
 
-  // ?? VALIDASI AWAL
+  // 🔴 VALIDASI AWAL
   if (!nis) {
     notifWarning("NIS siswa tidak valid!");
     return;
@@ -4538,7 +4578,7 @@ function editSiswa(nis) {
 
   modeSiswa = "edit";
 
-  // ?? LOADING
+  // 🔵 LOADING
   notifLoading("Mengambil data siswa...");
 
   google.script.run
@@ -4546,7 +4586,7 @@ function editSiswa(nis) {
 
       closeLoading();
 
-      // ? DATA KOSONG
+      // ❌ DATA KOSONG
       if (!data || !data.length) {
         notifError("Data siswa tidak tersedia!");
         return;
@@ -4556,13 +4596,13 @@ function editSiswa(nis) {
 
         const s = data.find(x => x.NIS == nis);
 
-        // ? TIDAK DITEMUKAN
+        // ❌ TIDAK DITEMUKAN
         if (!s) {
           notifWarning("Data siswa tidak ditemukan");
           return;
         }
 
-        // ? ISI FORM (TIDAK DIUBAH)
+        // ✅ ISI FORM (TIDAK DIUBAH)
         document.getElementById("s_nis").value = s.NIS || "";
         document.getElementById("s_nama").value = s.Nama || "";
         document.getElementById("s_kelas").value = s.Kelas || "";
@@ -4581,18 +4621,18 @@ function editSiswa(nis) {
         document.getElementById("s_kerja_wali").value = s["Pekerjaan Wali"] || "";
         document.getElementById("s_alamat_wali").value = s["Alamat Wali"] || "";
 
-        // ?? KUNCI NIS
+        // 🔒 KUNCI NIS
         document.getElementById("s_nis").disabled = true;
 
-        // ?? UBAH JUDUL MODAL
-        document.querySelector("#modalSiswa h2").textContent = "?? Edit Data Siswa";
+        // ✏️ UBAH JUDUL MODAL
+        document.querySelector("#modalSiswa h2").textContent = "✏️ Edit Data Siswa";
 
-        // ?? TAMPILKAN MODAL
+        // 🟢 TAMPILKAN MODAL
         const modal = document.getElementById("modalSiswa");
         modal.classList.remove("hidden");
         modal.classList.add("flex");
 
-        // ?? NOTIF SUKSES (opsional tapi enak UX)
+        // 🟢 NOTIF SUKSES (opsional tapi enak UX)
         notifSukses("Data siswa berhasil dimuat");
 
       } catch (err) {
@@ -4629,13 +4669,13 @@ function simpanEditSiswa() {
     "Alamat Wali": document.getElementById("s_alamat_wali").value.trim()
   };
 
-  // ?? VALIDASI WAJIB
+  // 🔴 VALIDASI WAJIB
   if (!data.NIS || !data.Nama || !data.Kelas) {
     notifWarning("NIS, Nama, dan Kelas wajib diisi!");
     return;
   }
 
-  // ?? VALIDASI TAMBAHAN (OPSIONAL TAPI AMAN)
+  // 🔴 VALIDASI TAMBAHAN (OPSIONAL TAPI AMAN)
   if (data.NIS.length < 3) {
     notifWarning("NIS minimal 3 karakter!");
     return;
@@ -4643,7 +4683,7 @@ function simpanEditSiswa() {
 
   try {
 
-    // ? KONFIRMASI
+    // ❓ KONFIRMASI
     const pesan = modeSiswa === "add"
       ? "Simpan data siswa baru?"
       : "Perbarui data siswa ini?";
@@ -4652,7 +4692,7 @@ function simpanEditSiswa() {
 
       if (!result.isConfirmed) return;
 
-      // ? LOADING
+      // ⏳ LOADING
       notifLoading("Menyimpan data siswa...");
 
       if (modeSiswa === "add") {
@@ -4715,7 +4755,7 @@ function tambahSiswaForm() {
   document.getElementById("s_nis").disabled = false;
 
   // ubah judul
-  document.querySelector("#modalSiswa h2").textContent = "? Tambah Data Siswa";
+  document.querySelector("#modalSiswa h2").textContent = "➕ Tambah Data Siswa";
 
   // tampilkan modal
   const modal = document.getElementById("modalSiswa");
@@ -4739,10 +4779,10 @@ function toggleUserId() {
 
   if (input.type === "password") {
     input.type = "text";
-    icon.textContent = "??";
+    icon.textContent = "🙈";
   } else {
     input.type = "password";
-    icon.textContent = "???";
+    icon.textContent = "👁️";
   }
 }
 
@@ -4762,7 +4802,7 @@ function downloadTPExcel() {
       const link = document.createElement("a");
       link.href = "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + base64;
 
-      // ?? SIMPAN DI SINI
+      // 🔥 SIMPAN DI SINI
       link.download = `TP_${new Date().toISOString().slice(0,10)}.xlsx`;
 
       link.click();
@@ -4806,7 +4846,7 @@ function uploadTPExcel() {
           return;
         }
 
-        // ?? VALIDASI HEADER
+        // 🔥 VALIDASI HEADER
         const header = Object.keys(jsonData[0]);
 
         const wajib = ["Mapel","Kelas","Semester","TP1","TP2","TP3","TP4","TP5","TP6","TP7","TP8","TP9","TP10"];
@@ -4815,7 +4855,7 @@ function uploadTPExcel() {
 
         if (!valid) {
           closeLoading();
-          notifError("Format Excel tidak sesuai!\nGunakan header: Mapel, Kelas, Semester, TP1 TP10");
+          notifError("Format Excel tidak sesuai!\nGunakan header: Mapel, Kelas, Semester, TP1–TP10");
           return;
         }
 
@@ -4823,7 +4863,7 @@ function uploadTPExcel() {
           .withSuccessHandler(msg => {
             closeLoading();
             notifSukses(
-              "? Upload berhasil!\n" +
+              "✅ Upload berhasil!\n" +
               msg
             );
             // reset file
@@ -4979,7 +5019,7 @@ function loadDownloadOptions() {
 
   if (!mapelSelect || !kelasSelect) return;
 
-  // ?? TANDA KHUSUS DOWNLOAD (ANTI BENTROK)
+  // 🔒 TANDA KHUSUS DOWNLOAD (ANTI BENTROK)
   mapelSelect.setAttribute("data-type", "download");
   kelasSelect.setAttribute("data-type", "download");
 
@@ -5017,7 +5057,7 @@ function loadDownloadOptions() {
       .map(m => m.trim())
       .filter(m => m);
 
-    // ?? DETEKSI PJOK / PADBP
+    // 🔥 DETEKSI PJOK / PADBP
     const isMapelKhusus = mapelArr.some(m => {
       const ml = m.toLowerCase();
       return ml === "pjok" || ml === "padbp";
@@ -5025,7 +5065,7 @@ function loadDownloadOptions() {
 
     // ================= MAPEL =================
     if (isMapelKhusus) {
-      // ?? HANYA MAPEL DIA
+      // 👉 HANYA MAPEL DIA
 
       mapelSelect.innerHTML = '<option value="">Pilih Mapel</option>';
 
@@ -5042,7 +5082,7 @@ function loadDownloadOptions() {
       }
 
     } else {
-      // ?? GURU LAIN ? SEMUA MAPEL
+      // 👉 GURU LAIN → SEMUA MAPEL
 
       google.script.run.withSuccessHandler(mapelList => {
 
@@ -5109,13 +5149,13 @@ function downloadExcel() {
         return;
       }
 
-      // ?? NAMA FILE DINAMIS
+      // 🔥 NAMA FILE DINAMIS
       const tahunAjaran = res.tahunAjaran || "TahunAjaran";
       const semester = res.semester || "Semester";
 
       const fileName = `${res.mapel}_${res.kelas}_TA_${res.tahunAjaran}_${res.semester}.xlsx`;
 
-      // ?? CONVERT BASE64 ? FILE
+      // 🔥 CONVERT BASE64 → FILE
       const byteCharacters = atob(res.data);
       const byteNumbers = new Array(byteCharacters.length);
 
@@ -5155,7 +5195,7 @@ function setupChartFilter() {
   wrapper.classList.add("hidden");
   select.innerHTML = '<option value="">Semua Kelas</option>';
 
-  // ?? HANYA ADMIN & SUPERADMIN
+  // 🔥 HANYA ADMIN & SUPERADMIN
   if (role === "admin" || role === "superadmin") {
 
     wrapper.classList.remove("hidden");
@@ -5516,7 +5556,7 @@ function loadSyncMapel() {
 
 let chartNilaiSiswaObj = null;
 function loadChartNilaiSiswa() {
-  // ?? AMBIL DARI USER ID
+  // 🔥 AMBIL DARI USER ID
   const userId = localStorage.getItem("userId");
   console.log("USER ID:", userId);
   if (!userId) {
@@ -5600,7 +5640,7 @@ function loadChartNilaiSiswa() {
     .withFailureHandler(err => {
       console.log("ERROR CHART:", err);
     })
-    // ?? KIRIM USER ID
+    // 🔥 KIRIM USER ID
     .getNilaiChartSiswa(userId);
 }
 
@@ -6220,7 +6260,7 @@ function unduhLegerDanRangking() {
     .ambilDataLegerDb(kelasDipilih);
 }
 
-// ?? FUNGSI FIX FINAL: SINKRONISASI TOTAL DROPDOWN NILAI SISWA
+// 🔥 FUNGSI FIX FINAL: SINKRONISASI TOTAL DROPDOWN NILAI SISWA
 function sinkronkanSemuaDropdown() {
   // 1. Ambil elemen sumber data (Filter Utama)
   const masterKelas = document.getElementById("filterKelas");
@@ -6258,7 +6298,7 @@ function sinkronkanSemuaDropdown() {
   }
 }
 
-// ?? MENGIKAT EVENT AGAR SETIAP KALI FILTER UTAMA BERUBAH, SECTIONS IKUT BERUBAH
+// 🔥 MENGIKAT EVENT AGAR SETIAP KALI FILTER UTAMA BERUBAH, SECTIONS IKUT BERUBAH
 document.addEventListener("DOMContentLoaded", () => {
   const masterKelas = document.getElementById("filterKelas");
   const masterMapel = document.getElementById("filterMapel");
@@ -6283,13 +6323,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // Variable global pengunci agar popup halaman login awal hanya muncul 1x
 var hasShownLoginMaintenancePopup = false;
 
-// ?? FUNGSI DI SISI CLIENT (INDEX.HTML) - MEMPROSES DATA HORIZONTAL DARI SERVER
+// 🔥 FUNGSI DI SISI CLIENT (INDEX.HTML) - MEMPROSES DATA HORIZONTAL DARI SERVER
 function inisialisasiAppInfo() {
-  console.log("?? Memulai sinkronisasi status aplikasi ke spreadsheet...");
+  console.log("🔄 Memulai sinkronisasi status aplikasi ke spreadsheet...");
   
   google.script.run
     .withSuccessHandler(function(response) {
-      console.log("?? Data dari Sheet AppInfo:", response);
+      console.log("📥 Data dari Sheet AppInfo:", response);
       
       if (!response || Object.keys(response).length === 0) return;
         
@@ -6329,14 +6369,14 @@ function inisialisasiAppInfo() {
         else {
           // Jika Admin/Superadmin yang login, lolos tanpa popup (Bypass)
           if (rolePenggunaAsli === "admin" || rolePenggunaAsli === "superadmin") {
-            console.log("?? Bypass Admin aktif.");
+            console.log("🔓 Bypass Admin aktif.");
             return;
           }
           
           // Jika Guru (seperti Ibu Lia Yuliana) yang login, tembak kembali popup peringatan di dashboard
           setTimeout(function() {
             tampilkanPopupMaintenance(
-              "??? Mode Perawatan Aktif", 
+              "🛠️ Mode Perawatan Aktif", 
               "Halo Bapak/Ibu Guru dan Siswa, saat ini aplikasi sedang dalam proses optimalisasi atau perawatan berkala.<br><br><b style='color:#dc2626;'>Mohon tidak melakukan manipulasi, pengeditan, atau input data nilai terlebih dahulu</b> untuk menghindari data hilang atau tidak tersimpan."
             );
           }, 1500);
@@ -6344,12 +6384,12 @@ function inisialisasiAppInfo() {
       }
     })
     .withFailureHandler(function(err) {
-      console.error("? Gagal mengambil info aplikasi:", err);
+      console.error("❌ Gagal mengambil info aplikasi:", err);
     })
     .getAppInfo(); 
 }
 
-// ?? FUNGSI POPUP REUSABLE (DENGAN TOMBOL CLOSE / SILANG & BACKUP ALERT)
+// 📦 FUNGSI POPUP REUSABLE (DENGAN TOMBOL CLOSE / SILANG & BACKUP ALERT)
 function tampilkanPopupMaintenance(judul, pesan) {
   if (typeof Swal !== 'undefined') {
     Swal.fire({
@@ -6370,7 +6410,7 @@ function tampilkanPopupMaintenance(judul, pesan) {
   }
 }
 
-// ? AKSI PEMANGGILAN OTOMATIS SAAT HALAMAN DI-REFRESH
+// ⚡ AKSI PEMANGGILAN OTOMATIS SAAT HALAMAN DI-REFRESH
 window.addEventListener('load', function() {
   inisialisasiAppInfo();
 });
