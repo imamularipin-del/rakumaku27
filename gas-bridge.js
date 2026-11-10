@@ -3,7 +3,7 @@
  * dan tetap memanggil fungsi di Google Apps Script lewat HTTP (fetch).
  */
 (function () {
-  var GAS_URL = "https://script.google.com/macros/s/AKfycbwDIGxJ7vIQPsb3Xz-5Ci-HEQruDQLrbYlvbnknr3pF91VnldaOzqKgoURnJv0nYGA/exec";
+  var GAS_URL = "https://script.google.com/macros/s/AKfycbxKBw1ydsLgtD00TY2XSo7wnqA8bLKDRX7d-I04V8g-uXPDSQ6BZgEwaUWR8zEp3oRe/exec";
 
   function makeRunner(onOk, onFail) {
     var runner = {
