@@ -1,33 +1,2443 @@
+function getUserById(idUser) {
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rakumaku27</title>
-  <style>
-    * {
-      box-sizing: border-box;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Users");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+
+    if (String(data[i][0]).trim() === String(idUser).trim()) {
+
+      const status = String(data[i][6] || "")
+        .trim()
+        .toLowerCase();
+
+      // 🔒 BLOCK LOGIN
+      if (status === "blocked") {
+        return { blocked: true };
+      }
+
+      return {
+        idUser: String(data[i][0] || "").trim(),
+        nama: String(data[i][1] || "").trim(),
+
+        role: String(data[i][2] || "")
+          .trim()
+          .toLowerCase(),
+
+        mapel: String(data[i][3] || "").trim(),
+        kelas: String(data[i][4] || "").trim(),
+        nip: String(data[i][5] || "").trim(),
+
+        status: status || "allowed",
+
+        email: String(data[i][7] || "").trim()
+      };
     }
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+  }
+
+  return null;
+}
+
+// Ambil semua kelas unik dari DataSiswa
+function getKelas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const data = ss.getSheetByName('Data Siswa').getDataRange().getValues();
+  const kelasSet = new Set();
+  data.slice(1).forEach(row => kelasSet.add(row[2])); // Kelas ada di kolom ke-3
+  return [...kelasSet];
+}
+
+// Ambil semua mapel dari daftar nama sheet (kecuali Data Siswa)
+function getMapelList() {
+  const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+
+  const mapel = sheets.filter(sheet => {
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 14) return false; // minimal kolom TP1–TP10
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+    // validasi aman
+    return headers[0] === "NIS" &&
+           headers[1] === "Nama" &&
+           headers[2] === "Kelas" &&
+           headers[3] === "Mapel" &&
+           headers.slice(4, 14).every((h, i) => h === "TP" + (i + 1));
+  })
+  .map(sheet => sheet.getName())
+  .sort(); // 🔥 biar rapi
+
+  return mapel;
+}
+
+// Ambil daftar siswa berdasarkan kelas
+function getSiswaByKelas(kelas, mapel) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetDataSiswa = ss.getSheetByName('Data Siswa');
+  const dataSiswa = sheetDataSiswa.getDataRange().getValues();
+
+  let nilaiMapel = {};
+  const sheetMapel = ss.getSheetByName(mapel);
+  if (sheetMapel) {
+    const nilaiData = sheetMapel.getDataRange().getValues();
+    for (let i = 1; i < nilaiData.length; i++) {
+      nilaiMapel[nilaiData[i][0]] = nilaiData[i].slice(4, 14); // TP1 - TP10
     }
-    iframe {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border: 0;
+  }
+
+  const siswaList = [];
+  for (let i = 1; i < dataSiswa.length; i++) {
+    if (dataSiswa[i][2] === kelas) {
+      siswaList.push({
+        nis: dataSiswa[i][0],
+        nama: dataSiswa[i][1],
+        kelas: dataSiswa[i][2],
+        tps: nilaiMapel[dataSiswa[i][0]] || []
+      });
     }
-  </style>
-</head>
-<body>
-  <iframe
-    src="https://script.google.com/macros/s/AKfycbwDIGxJ7vIQPsb3Xz-5Ci-HEQruDQLrbYlvbnknr3pF91VnldaOzqKgoURnJv0nYGA/exec"
-    allowfullscreen>
-  </iframe>
-</body>
-</html>
+  }
+  return siswaList;
+}
+
+// Simpan data baru (CREATE)
+function createData(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(data.mapel);
+
+  // Cek apakah sudah ada data untuk NIS ini
+  const lastRow = sheet.getLastRow();
+  const rows = sheet.getRange(2, 1, lastRow - 1, 4).getValues(); // Ambil kolom NIS, Nama, Kelas, Mapel
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i][0] == data.nis) {
+      return; // Jika sudah ada, abaikan
+    }
+  }
+
+  const newRow = [data.nis, data.nama, data.kelas, data.mapel, ...data.tps];
+  sheet.appendRow(newRow);
+}
+
+// Perbarui data (UPDATE)
+function updateData(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(data.mapel);
+  const values = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] == data.nis) {
+      const row = i + 1;
+      const update = [data.nis, data.nama, data.kelas, data.mapel, ...data.tps];
+      sheet.getRange(row, 1, 1, update.length).setValues([update]);
+      return;
+    }
+  }
+}
+
+// Hapus data (DELETE)
+function deleteData(nis, mapel) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(mapel);
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == nis) {
+      sheet.deleteRow(i + 1);
+      return;
+    }
+  }
+}
+
+function getIdentitasSekolah() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("IDENTITAS");
+  if (!sheet) return {};
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const values = sheet.getRange(2, 1, 1, headers.length).getValues()[0];
+
+  const data = {};
+  headers.forEach((key, i) => {
+    data[key] = values[i];
+  });
+  return data;
+}
+
+function updateIdentitasSekolah(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("IDENTITAS");
+  if (!sheet) throw new Error("Sheet IDENTITAS tidak ditemukan");
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  const newRow = headers.map(h => data[h] || "");
+
+  // Simpan ke baris ke-2 (overwrite)
+  sheet.getRange(2, 1, 1, newRow.length).setValues([newRow]);
+
+  return "✅ Identitas sekolah berhasil diperbarui";
+}
+
+function getSemesterFromIdentitas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("IDENTITAS");
+  if (!sheet) return "";
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const values = sheet.getRange(2, 1, 1, headers.length).getValues()[0];
+
+  const semesterIndex = headers.indexOf("Semester");
+  return semesterIndex >= 0 ? values[semesterIndex] : "";
+}
+
+function saveOrUpdateData(data) {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(data.mapel);
+
+  if (!sheet) {
+    throw new Error("Sheet mapel tidak ditemukan: " + data.mapel);
+  }
+
+  // =========================
+  // NORMALISASI DATA
+  // =========================
+  const tps = data.tps.map(v => {
+    if (v === "" || v === null || v === undefined) return "";
+    return Number(v);
+  });
+
+  // =========================
+  // RATA-RATA
+  // =========================
+  const nilaiValid = tps.filter(v => v !== "" && !isNaN(v));
+
+  const rataRata = nilaiValid.length
+    ? Math.round(
+        nilaiValid.reduce((a,b)=>a+b,0) / nilaiValid.length
+      )
+    : "";
+
+  // =========================
+  // PREDIKAT
+  // =========================
+  let predikat = "";
+
+  const sheetPred = ss.getSheetByName("Predikat");
+
+  if (sheetPred && rataRata !== "") {
+
+    const predData = sheetPred.getDataRange().getValues();
+
+    for (let i = 1; i < predData.length; i++) {
+
+      const min = Number(predData[i][0]);
+      const max = Number(predData[i][1]);
+      const huruf = predData[i][2];
+
+      if (rataRata >= min && rataRata <= max) {
+        predikat = huruf;
+        break;
+      }
+    }
+  }
+
+  // =========================
+  // NILAI MAKS & MIN
+  // =========================
+  const nilaiMaks = nilaiValid.length ? Math.max(...nilaiValid) : "";
+  const nilaiMin  = nilaiValid.length ? Math.min(...nilaiValid) : "";
+
+  // =========================
+  // DESKRIPSI
+  // =========================
+  let descMaks = "";
+  let descMin = "";
+
+  const semester = String(getSemesterFromIdentitas() || "")
+    .trim()
+    .toLowerCase();
+
+  const sheetDesc = ss.getSheetByName("Deskripsi");
+
+  if (sheetDesc) {
+
+    const descData = sheetDesc.getDataRange().getValues();
+
+    // Cari baris deskripsi sesuai mapel + kelas + semester
+    let rowDesc = null;
+
+    for (let i = 1; i < descData.length; i++) {
+
+      const mapelDesc = String(descData[i][0] || "")
+        .trim()
+        .toLowerCase();
+
+      const kelasDesc = String(descData[i][1] || "")
+        .trim()
+        .toLowerCase();
+
+      const smtDesc = String(descData[i][2] || "")
+        .trim()
+        .toLowerCase();
+
+      const mapelData = String(data.mapel || "")
+        .trim()
+        .toLowerCase();
+
+      const kelasData = String(data.kelas || "")
+        .trim()
+        .toLowerCase();
+
+      if (
+        mapelDesc === mapelData &&
+        kelasDesc === kelasData &&
+        smtDesc === semester
+      ) {
+        rowDesc = descData[i];
+        break;
+      }
+    }
+
+    if (rowDesc) {
+
+      // =========================
+      // CARI INDEX MAKS & MIN
+      // =========================
+      let idxMaks = -1;
+      let idxMin = -1;
+
+      let nilaiTerbesar = null;
+      let nilaiTerkecil = null;
+
+      tps.forEach((v, i) => {
+
+        // skip kosong
+        if (v === "" || v === null || v === undefined) return;
+
+        const angka = Number(v);
+
+        // skip NaN
+        if (isNaN(angka)) return;
+
+        // maksimum
+        if (nilaiTerbesar === null || angka > nilaiTerbesar) {
+          nilaiTerbesar = angka;
+          idxMaks = i;
+        }
+
+        // minimum
+        if (nilaiTerkecil === null || angka < nilaiTerkecil) {
+          nilaiTerkecil = angka;
+          idxMin = i;
+        }
+
+      });
+
+      // =========================
+      // AMBIL DESKRIPSI
+      // =========================
+      if (idxMaks >= 0) {
+
+        const colMaks = idxMaks + 3;
+
+        descMaks = String(
+          rowDesc[colMaks] || ""
+        ).trim();
+
+      }
+
+      if (idxMin >= 0) {
+
+        const colMin = idxMin + 3;
+
+        descMin = String(
+          rowDesc[colMin] || ""
+        ).trim();
+
+      }
+
+    } else {
+
+      Logger.log(
+        "Deskripsi tidak ditemukan: " +
+        data.mapel + " | " +
+        data.kelas + " | " +
+        semester
+      );
+
+    }
+  }
+
+  // =========================
+  // BARIS FINAL
+  // =========================
+  const newRow = [
+    data.nis,
+    data.nama,
+    data.kelas,
+    data.mapel,
+
+    ...tps,
+
+    rataRata,
+    predikat,
+
+    nilaiMaks,
+    descMaks,
+
+    nilaiMin,
+    descMin
+  ];
+
+  // =========================
+  // UPDATE / INSERT
+  // =========================
+  const values = sheet.getDataRange().getValues();
+
+  let found = false;
+
+  for (let i = 1; i < values.length; i++) {
+
+    if (String(values[i][0]).trim() === String(data.nis).trim()) {
+
+      sheet.getRange(i + 1, 1, 1, newRow.length)
+        .setValues([newRow]);
+
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    sheet.appendRow(newRow);
+  }
+
+  return true;
+}
+
+// upload excel belum ok per kelas
+function uploadNilai(fileBlob, mapelGuru, kelasPilihan) { // ➕ Tambahkan parameter kelasPilihan dari client-side
+  try {
+    // Simpan sementara di Drive
+    const tempFile = DriveApp.createFile(fileBlob);
+
+    // Konversi ke Spreadsheet sementara
+    const ssConverted = SpreadsheetApp.open(
+      Drive.Files.copy({}, tempFile.getId(), {convert: true})
+    );
+
+    // Ambil data dari sheet pertama file Excel yang diunggah
+    const data = ssConverted.getSheets()[0].getDataRange().getValues();
+
+    // Hapus file sementara
+    tempFile.setTrashed(true);
+
+    // Pastikan parameter kelas pilihan dan mapel dikonversi ke huruf kecil agar pencocokan akurat
+    const targetKelas = String(kelasPilihan || "").trim().toLowerCase();
+    const targetMapel = String(mapelGuru || "").trim().toLowerCase();
+
+    let jumlahTerupdate = 0;
+    let jumlahBaru = 0;
+
+    // Loop data Excel, skip header
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const nis = row[0];
+      const nama = row[1];
+      const kelasExcel = String(row[2] || "").trim().toLowerCase();
+      const mapelExcel = String(row[3] || "").trim().toLowerCase();
+      const nilaiTP = row.slice(4, 14); // TP1 - TP10
+
+      // 🛑 VALIDASI KETAT 1: Skip jika mapel di file tidak sesuai dengan mapel pilihan guru
+      if (mapelExcel !== targetMapel) {
+        continue; 
+      }
+
+      // 🛑 VALIDASI KETAT 2: Skip jika kelas di file tidak sesuai dengan kelas pilihan di dropdown web
+      // Ini memastikan jika ada data kelas lain di file Excel, kelas tersebut TIDAK AKAN DIPROSES
+      if (kelasExcel !== targetKelas) {
+        continue; 
+      }
+
+      // Ambil atau buat sheet mapel
+      let targetSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(row[3]); // row[3] adalah nama mapel asli teks
+      if (!targetSheet) {
+        targetSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(row[3]);
+        targetSheet.appendRow(["NIS","Nama","Kelas","Mapel","TP1","TP2","TP3","TP4","TP5","TP6","TP7","TP8","TP9","TP10"]);
+      }
+
+      // Ambil semua data yang sudah ada di sheet target untuk pengecekan
+      const sheetData = targetSheet.getDataRange().getValues();
+      let foundRow = -1;
+
+      // Cari baris berdasarkan NIS dan KELAS di sheet database utama
+      for (let r = 1; r < sheetData.length; r++) {
+        const dbNis = sheetData[r][0];
+        const dbKelas = String(sheetData[r][2] || "").trim().toLowerCase();
+
+        // 🔥 KUNCI KEAMANAN: Baris dianggap cocok HANYA JIKA NIS cocok DAN KELAS di database juga cocok
+        if (dbNis === nis && dbKelas === targetKelas) {
+          foundRow = r + 1; // +1 karena index array mulai 0, baris sheet mulai 1
+          break;
+        }
+      }
+
+      if (foundRow > 0) {
+        // ✅ JIKA COCOK: Hanya update data siswa di kelas target tersebut
+        targetSheet.getRange(foundRow, 1, 1, 14)
+                   .setValues([[nis, nama, row[2], row[3], ...nilaiTP]]);
+        jumlahTerupdate++;
+      } else {
+        // ✅ JIKA TIDAK ADA: Tambah data baru untuk kelas tersebut
+        targetSheet.appendRow([nis, nama, row[2], row[3], ...nilaiTP]);
+        jumlahBaru++;
+      }
+    }
+
+    return `Berhasil memproses nilai khusus kelas ${kelasPilihan.toUpperCase()}. (Update: ${jumlahTerupdate} siswa, Baru: ${jumlahBaru} siswa)`;
+  } catch (err) {
+    return "Gagal upload nilai: " + err;
+  }
+}
+
+// ✅ CETAK RAPOR pakai sheet Predikat
+// ✅ Ambil keterangan dari Predikat lalu gabung dengan deskripsi TP
+function getKategori(nilai, deskripsi) {
+  if (!deskripsi) return "";
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetPred = ss.getSheetByName("Predikat");
+  if (!sheetPred) return deskripsi;
+
+  const data = sheetPred.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    const [min, max, predikat, ket] = data[i];
+    if (nilai >= Number(min) && nilai <= Number(max)) {
+      return `${ket} ${deskripsi.toLowerCase()}`.trim();
+    }
+  }
+  return deskripsi;
+}
+
+function getAbsensiByKelas(kelas) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const shSiswa = ss.getSheetByName("Data Siswa");
+  const shAbsensi = ss.getSheetByName("Absensi");
+
+  const siswa = shSiswa.getDataRange().getValues();
+  const absensi = shAbsensi.getDataRange().getValues();
+
+  const result = [];
+
+  for (let i = 1; i < siswa.length; i++) {
+    if (siswa[i][2] == kelas) {
+      const nis = siswa[i][0];
+
+      let dataAbs = absensi.find(a => a[0] == nis) || [];
+
+      result.push({
+        nis,
+        nama: siswa[i][1],
+        kelas: siswa[i][2],
+        sakit: dataAbs[3] || 0,
+        izin: dataAbs[4] || 0,
+        alpa: dataAbs[5] || 0,
+        tb: dataAbs[6] || "",
+        bb: dataAbs[7] || "",
+        ekskul: dataAbs[8] || "",
+        nilaiEkskul: dataAbs[9] || "",
+        ketEkskul: dataAbs[10] || ""
+      });
+    }
+  }
+
+  return result;
+}
+
+function getAbsensiByNIS(nis) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Absensi");
+  if (!sheet) return null;
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+
+  const idx = {
+    nis: headers.indexOf("NIS"),
+    sakit: headers.indexOf("Sakit"),
+    izin: headers.indexOf("Izin"),
+    alpa: headers.indexOf("Alpa"),
+    tinggi: headers.indexOf("Tinggi"),
+    berat: headers.indexOf("Berat"),
+    ekskul: headers.indexOf("Ekskul"),
+    nilaiEkskul: headers.indexOf("Nilai Ekskul"),
+    ketEkskul: headers.indexOf("Keterangan")
+  };
+
+  const row = data.find(r => String(r[idx.nis]).trim() === String(nis).trim());
+  if (!row) return null;
+
+  return {
+    sakit: row[idx.sakit] || 0,
+    izin: row[idx.izin] || 0,
+    alpa: row[idx.alpa] || 0,
+    tb: row[idx.tinggi] || "-",
+    bb: row[idx.berat] || "-",
+    ekskul: row[idx.ekskul] || "-",
+    nilaiEkskul: row[idx.nilaiEkskul] || "-",
+    ketEkskul: row[idx.ketEkskul] || "-"
+  };
+}
+
+function getRaporSiswa(nis, namaGuru) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Identitas sekolah
+  const identitas = getIdentitasSekolah();
+  const semesterLabel = (identitas["Semester"] == 1 || String(identitas["Semester"]).toLowerCase().includes("ganjil"))
+                        ? "Ganjil" : "Genap";
+
+  // Biodata siswa
+  const biodata = getBiodataSiswa(nis);
+  if (!biodata) return null;
+
+  const kelas = biodata["Kelas"];
+
+  // ABSENSI — FIX APIK
+  const absensi = getAbsensiByNIS(nis) || {
+    sakit: 0, izin: 0, alpa: 0,
+    tb: "-", bb: "-",
+    ekskul: "-", nilaiEkskul: "-", ketEkskul: "-"
+  };
+
+  // Ambil sheet Deskripsi
+  const sheetDesc = ss.getSheetByName("Deskripsi");
+  const dataDesc = sheetDesc ? sheetDesc.getDataRange().getValues() : [];
+
+  // Ambil semua sheet mapel
+  const mapelSheets = ss.getSheets().filter(sh => {
+    const header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    return header.includes("TP1") && header.includes("TP10");
+  });
+
+  const raporData = [];
+
+  mapelSheets.forEach(sheet => {
+    const values = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(nis).trim()) {
+
+        const mapel = values[i][3] || "";
+        const tps = values[i].slice(4, 14).map(v => Number(v) || 0);
+
+        const filled = tps.filter(v => v > 0);
+        const rata = filled.length ? Math.round(filled.reduce((a,b)=>a+b,0)/filled.length) : "";
+
+        const nilaiMaks = filled.length ? Math.max(...filled) : "";
+        const nilaiMin = filled.length ? Math.min(...filled) : "";
+
+        let descMaks = "", descMin = "";
+
+        const rowDesc = dataDesc.find(r => 
+          r[0].toLowerCase() === mapel.toLowerCase() &&
+          r[1].toLowerCase() === kelas.toLowerCase() &&
+          r[2].toLowerCase() === semesterLabel.toLowerCase()
+        );
+
+        if (rowDesc) {
+          const idxMaks = tps.indexOf(nilaiMaks);
+          const idxMin = tps.indexOf(nilaiMin);
+
+          if (idxMaks >= 0) descMaks = getKategori(nilaiMaks, rowDesc[3 + idxMaks]);
+          if (idxMin >= 0) descMin = getKategori(nilaiMin, rowDesc[3 + idxMin]);
+        }
+
+        raporData.push({
+          mapel: mapel,
+          rataRata: rata,
+          descMaks: descMaks,
+          descMin: descMin
+        });
+      }
+    }
+  });
+
+  return {
+    identitas: identitas,
+    biodata: biodata,
+    nis: biodata["NIS"],
+    namaSiswa: biodata["Nama"],
+    kelas: kelas,
+    semester: semesterLabel,
+    tahunAjaran: identitas["Tahun Ajaran"] || "",
+    mapelData: raporData,
+    absensi: absensi,  // ← Wajib ada
+    mapelAktif: getMapelAktifRapor(namaGuru)
+  };
+}
+
+function syncDataSiswaToMapel(mapelName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetSiswa = ss.getSheetByName("Data Siswa");
+  const dataSiswa = sheetSiswa.getDataRange().getValues();
+  const headersSiswa = dataSiswa[0];
+  const nisIdx = headersSiswa.indexOf("NIS");
+  const namaIdx = headersSiswa.indexOf("Nama");
+  const kelasIdx = headersSiswa.indexOf("Kelas");
+
+  if (nisIdx < 0 || namaIdx < 0 || kelasIdx < 0) {
+    throw new Error("Kolom NIS/Nama/Kelas tidak ditemukan di Data Siswa");
+  }
+
+  // Cari sheet mapel yang sesuai
+  const mapelSheet = ss.getSheetByName(mapelName);
+  if (!mapelSheet) {
+    throw new Error("Sheet mapel tidak ditemukan: " + mapelName);
+  }
+
+  // Header mapel
+  const headersMapel = mapelSheet.getRange(1, 1, 1, mapelSheet.getLastColumn()).getValues()[0];
+  const startRow = 2;
+  const newData = [];
+
+  for (let i = 1; i < dataSiswa.length; i++) {
+    const nis = dataSiswa[i][nisIdx];
+    const nama = dataSiswa[i][namaIdx];
+    const kelas = dataSiswa[i][kelasIdx];
+    if (!nis || !nama || !kelas) continue;
+
+    // Buat row default mapel
+    const row = Array(headersMapel.length).fill("");
+    row[0] = nis;
+    row[1] = nama;
+    row[2] = kelas;
+    row[3] = mapelName;
+    newData.push(row);
+  }
+
+  // Hapus data lama (hanya jika ada isi sebelumnya)
+  if (mapelSheet.getLastRow() > 1) {
+    mapelSheet.getRange(startRow, 1, mapelSheet.getLastRow() - 1, headersMapel.length).clearContent();
+  }
+
+  // Isi data baru hanya kalau ada
+  if (newData.length > 0) {
+    mapelSheet.getRange(startRow, 1, newData.length, headersMapel.length).setValues(newData);
+    return "Sinkronisasi mapel " + mapelName + " berhasil. (" + newData.length + " siswa)";
+  } else {
+    return "Tidak ada data siswa untuk disinkronkan ke mapel " + mapelName;
+  }
+}
+
+// proses upload excel
+function processUploadData(data) {
+
+  let count = 0;
+
+  data.forEach(row => {
+
+    const payload = {
+      nis: row.NIS,
+      nama: row.Nama,
+      kelas: row.Kelas,
+      mapel: row.Mapel,
+      tps: [
+        row.TP1,row.TP2,row.TP3,row.TP4,row.TP5,
+        row.TP6,row.TP7,row.TP8,row.TP9,row.TP10
+      ]
+    };
+
+    saveOrUpdateData(payload);
+
+    count++;
+  });
+
+  return `Upload berhasil: ${count} data diproses`;
+}
+
+// Registrasi Akun
+// ✅ Backend untuk registrasi user
+function registerUser(user, forceUpdate) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Users");
+  if (!sheet) throw new Error("Sheet 'Users' tidak ditemukan.");
+
+  const data = sheet.getDataRange().getValues();
+
+  // 🔎 Cek apakah ID sudah ada
+  let existingRow = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(user.idUser).trim()) {
+      existingRow = i + 1;
+      break;
+    }
+  }
+
+  // Default status
+  let status = "Allowed";
+  if (user.role.toLowerCase() === "admin") {
+    status = "Blocked";
+  }
+
+  // 🔹 Ambil kelas dari Data Siswa jika pilih "Semua"
+  let kelasFinal = user.kelas;
+  if (String(user.kelas).toLowerCase() === "semua") {
+    const dataSiswa = ss.getSheetByName("Data Siswa").getDataRange().getValues();
+    const kelasSet = new Set();
+    dataSiswa.slice(1).forEach(r => {
+      if (r[2]) kelasSet.add(r[2]);
+    });
+    kelasFinal = [...kelasSet].join(", ");
+  }
+
+  // 🔥 DATA BARU (TAMBAH EMAIL)
+  const rowData = [
+    user.idUser,
+    user.nama,
+    user.role,
+    user.mapel,
+    kelasFinal,
+    user.nip,
+    status,
+    user.email || "" // ← TAMBAHAN
+  ];
+
+  if (existingRow > 0) {
+    if (!forceUpdate) {
+      return { success: false, duplicate: true, message: "⚠️ ID User sudah terdaftar. Perbarui data?" };
+    }
+
+    sheet.getRange(existingRow, 1, 1, rowData.length).setValues([rowData]);
+
+    // 🔥 KIRIM EMAIL UPDATE
+    kirimEmailRegistrasi(user);
+
+    return { success: true, message: "🔄 Data user berhasil diperbarui & email dikirim." };
+  } else {
+
+    // simpan user baru
+    sheet.appendRow(rowData);
+
+    // 🔥 KIRIM EMAIL REGISTRASI
+    kirimEmailRegistrasi(user);
+
+    return {
+      success: true,
+      message: user.role.toLowerCase() === "admin"
+        ? "✅ Registrasi berhasil. Cek email Anda. Akun Admin masih diblok."
+        : "✅ Registrasi berhasil. Cek email Anda untuk login."
+    };
+  }
+}
+
+function kirimEmailRegistrasi(user) {
+  if (!user.email) return;
+
+  const subject = "Konfirmasi Akun Anda Berhasil Dibuat";
+  const urlApp = ScriptApp.getService().getUrl();
+
+  const htmlBody = `
+  <div style="font-family: Arial, sans-serif; line-height:1.6; color:#333;">
+    
+    <h2 style="color:#2563eb;">✅ Akun Berhasil Dibuat</h2>
+
+    <p>bismillah</p>
+    <p>Assalamu'alaikum <strong>${user.nama}</strong>,</p>
+
+    <p>Akun Anda telah berhasil dibuat di <b>Sistem Rapor Rakumaku</b>.</p>
+
+    <div style="background:#f1f5f9; padding:12px; border-radius:8px; margin:10px 0;">
+      <p><strong>Detail Akun:</strong></p>
+      <p>ID User: <b>${user.idUser}</b><br>
+      Role: <b>${user.role}</b></p>
+    </div>
+
+    <div style="margin:15px 0;">
+      <a href="${urlApp}" 
+         style="background:#2563eb; color:#fff; padding:10px 15px; text-decoration:none; border-radius:6px;">
+         Buka Aplikasi
+      </a>
+    </div>
+
+    <p><strong>Catatan:</strong></p>
+    <ul>
+      <li>Gunakan ID di atas untuk login</li>
+      <li>Jika Admin, tunggu persetujuan terlebih dahulu</li>
+    </ul>
+
+    <p style="margin-top:20px;">Terima kasih</p>
+
+    <hr style="margin-top:20px;">
+    <small style="color:#888;">Email ini dikirim otomatis oleh Sistem Rapor</small>
+  </div>
+  `;
+
+  GmailApp.sendEmail(user.email, subject, "", {
+    htmlBody: htmlBody
+  });
+}
+
+// 📌 Catat log akses user
+function logUserAccess(user) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("LogAkses") || ss.insertSheet("LogAkses");
+
+  // Jika header belum ada, tambahkan
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Tanggal Akses", "IDUser", "Nama", "Role", "Kelas", "Mapel", "IP/Info Browser"]);
+  }
+
+  // Info tambahan dari session
+  const tanggal = new Date();
+ const browserInfo = user.browser || "Unknown";
+
+  sheet.appendRow([
+    tanggal,
+    user.idUser,
+    user.nama,
+    user.role,
+    user.kelas,
+    user.mapel,
+    browserInfo
+  ]);
+}
+
+// 📌 Proses Upload Data Siswa (struktur lengkap)
+function processUploadSiswa(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Data Siswa");
+  if (!sheet) throw new Error("Sheet 'Data Siswa' tidak ditemukan.");
+
+  const headers = sheet.getDataRange().getValues()[0];
+
+  // Daftar header wajib sesuai struktur
+  const requiredHeaders = [
+    "NIS", "Nama", "Kelas", "Tempat Tanggal Lahir", "Jenis Kelamin", "Agama",
+    "Status dalam keluarga", "Pendidikan Sebelumnya", "Alamat Peserta Didik",
+    "Nama Ayah", "Nama Ibu", "Pekerjaan Ayah", "Pekerjaan Ibu", "Alamat Orangtua",
+    "Nama Wali", "Pekerjaan Wali", "Alamat Wali"
+  ];
+
+  // Pastikan semua header ada di sheet
+  const missing = requiredHeaders.filter(h => !headers.includes(h));
+  if (missing.length > 0) {
+    throw new Error("Header berikut tidak ditemukan di sheet Data Siswa: " + missing.join(", "));
+  }
+
+  // Ambil index tiap kolom
+  const colIndex = {};
+  requiredHeaders.forEach(h => {
+    colIndex[h] = headers.indexOf(h);
+  });
+
+  // Loop data hasil upload
+  data.forEach(row => {
+    const nis = String(row["NIS"] || "").trim();
+    if (!nis) return;
+
+    const lastRow = sheet.getLastRow();
+    const nisData = sheet.getRange(2, colIndex["NIS"] + 1, lastRow - 1, 1).getValues().flat();
+    const rowIndex = nisData.findIndex(n => String(n).trim() === nis);
+
+    // Ambil semua nilai sesuai urutan header
+    const rowValues = requiredHeaders.map(h => row[h] || "");
+
+    if (rowIndex >= 0) {
+      // 🔄 Update baris lama
+      sheet.getRange(rowIndex + 2, 1, 1, requiredHeaders.length).setValues([rowValues]);
+    } else {
+      // ➕ Tambahkan baris baru
+      sheet.appendRow(rowValues);
+    }
+  });
+
+  return "✅ Data siswa berhasil diupload & diperbarui.";
+}
+
+// 📌 Proses Upload Identitas Siswa
+function processUploadIdentitas(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("Identitas");
+
+  if (!sheet) {
+    sheet = ss.insertSheet("Identitas");
+  }
+
+  sheet.clear();
+
+  // Header sesuai struktur
+  const headers = [
+    "Nama Sekolah", "Alamat Sekolah", "Email", "Web", "Nama Kepala Sekolah",
+    "NIP Kepala Sekolah", "Tahun Ajaran", "Semester", "Logo Sekolah", "Kota",
+    "Titimangsa", "Kecamatan", "Kabupaten/Kota", "Provinsi", "Kode Pos", "Telepon"
+  ];
+  sheet.appendRow(headers);
+
+  // Isi data dari Excel
+  data.forEach(row => {
+    sheet.appendRow(headers.map(h => row[h] || ""));
+  });
+
+  return "Identitas sekolah berhasil diupload!";
+}
+
+// 🔹 Ambil data chart berdasarkan role & mapel user
+function getChartData(user) {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const role = (user.role || "").toLowerCase();
+  const mapelUser = (user.mapel || "").toLowerCase();
+  const kelasUser = (user.kelas || "").toLowerCase();
+  const filterKelas = (user.filterKelas || "").toLowerCase(); // ✅ FIX
+
+  const mapelTerbatas = ["pjok", "padbp"];
+
+  let result = [];
+
+  // ================= KHUSUS PJOK / PADBP =================
+  if (role === "guru" && mapelTerbatas.includes(mapelUser)) {
+
+    const sheet = ss.getSheetByName(mapelUser);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getValues();
+
+    let kelasMap = {};
+
+    data.slice(1).forEach(r => {
+
+      const kelas = String(r[2]).trim();
+      const tps = r.slice(4, 14);
+
+      const nilaiValid = tps
+        .filter(v => v !== "" && v !== null && !isNaN(v))
+        .map(Number);
+
+      if (nilaiValid.length === 0) return;
+
+      const avg = nilaiValid.reduce((a, b) => a + b, 0) / nilaiValid.length;
+
+      if (!kelasMap[kelas]) {
+        kelasMap[kelas] = { total: 0, count: 0 };
+      }
+
+      kelasMap[kelas].total += avg;
+      kelasMap[kelas].count += 1;
+    });
+
+    Object.keys(kelasMap).forEach(kelas => {
+      const { total, count } = kelasMap[kelas];
+      result.push({
+        label: kelas,
+        rataRata: Math.round(total / count)
+      });
+    });
+
+    return result;
+  }
+
+  // ================= DEFAULT =================
+  const sheets = ss.getSheets();
+
+  sheets.forEach(sheet => {
+
+    const namaSheet = sheet.getName();
+
+    const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    if (!(header[0] === "NIS" && header[3] === "Mapel")) return;
+
+    const data = sheet.getDataRange().getValues();
+
+    let filtered = [];
+
+    // ================= ADMIN =================
+    if (role === "admin" || role === "superadmin") {
+
+      filtered = data.slice(1);
+
+      if (filterKelas) {
+        filtered = filtered.filter(r =>
+          String(r[2]).toLowerCase() === filterKelas
+        );
+      }
+    }
+
+    // ================= GURU =================
+    else if (role === "guru") {
+
+      const kelasArr = kelasUser.split(",").map(k => k.trim().toLowerCase());
+
+      if (mapelUser === "semua") {
+
+        filtered = data.slice(1).filter(r => {
+
+          const kelasData = String(r[2]).toLowerCase();
+
+          if (filterKelas) return kelasData === filterKelas;
+
+          return kelasArr.includes(kelasData);
+        });
+
+      } else {
+
+        if (!mapelUser.includes(namaSheet.toLowerCase())) return;
+
+        filtered = data.slice(1).filter(r => {
+
+          const kelasData = String(r[2]).toLowerCase();
+
+          if (filterKelas) return kelasData === filterKelas;
+
+          return kelasArr.includes(kelasData);
+        });
+      }
+    }
+
+    if (!filtered.length) return;
+
+    let total = 0;
+    let count = 0;
+
+    filtered.forEach(r => {
+
+      const tps = r.slice(4, 14);
+
+      const nilaiValid = tps
+        .filter(v => v !== "" && v !== null && !isNaN(v))
+        .map(Number);
+
+      if (nilaiValid.length > 0) {
+        const avg = nilaiValid.reduce((a, b) => a + b, 0) / nilaiValid.length;
+        total += avg;
+        count++;
+      }
+    });
+
+    if (count === 0) return;
+
+    result.push({
+      label: namaSheet,
+      rataRata: Math.round(total / count)
+    });
+
+  });
+
+  return result;
+}
+
+// ✅ Ambil biodata lengkap siswa berdasarkan NIS
+function getBiodataSiswa(nis) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Data Siswa");
+  if (!sheet) return null;
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0]; // baris pertama = header
+  const row = data.find(r => String(r[0]).trim() === String(nis).trim()); // kolom A = NIS
+  if (!row) return null;
+
+  const biodata = {};
+  headers.forEach((h, i) => {
+    biodata[h] = row[i] || "";
+  });
+
+  return biodata;
+}
+
+function saveBatchNilai(dataArray) {
+  dataArray.forEach(data => {
+    try {
+      saveOrUpdateData(data); // gunakan fungsi yang sudah ada
+    } catch (err) {
+      Logger.log(`Gagal menyimpan NIS ${data.nis}: ${err}`);
+    }
+  });
+  return "Selesai menyimpan semua nilai.";
+}
+
+function saveAbsensi(data) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Absensi");
+  const all = sh.getDataRange().getValues();
+
+  let rowIndex = all.findIndex(r => r[0] == data.nis);
+
+  const row = [
+    data.nis,
+    data.nama,
+    data.kelas,
+    data.sakit,
+    data.izin,
+    data.alpa,
+    data.tb,
+    data.bb,
+    data.ekskul,
+    data.nilaiEkskul,
+    data.ketEkskul
+  ];
+
+  if (rowIndex > 0) {
+    sh.getRange(rowIndex + 1, 1, 1, row.length).setValues([row]);
+  } else {
+    sh.appendRow(row);
+  }
+
+  return "OK";
+}
+
+// ================= USER MANAGEMENT =================
+
+// Ambil semua user
+function getAllUsers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
+  const data = sheet.getDataRange().getValues();
+
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    result.push({
+      idUser: data[i][0],
+      nama: data[i][1],
+      role: data[i][2],
+      mapel: data[i][3],
+      kelas: data[i][4],
+      nip: data[i][5],
+      status: data[i][6],
+      link: data[i][7] || ""
+    });
+  }
+  return result;
+}
+
+// Update user
+function updateUser(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
+  const values = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] == data.idUser) {
+      sheet.getRange(i + 1, 1, 1, 8).setValues([[
+        data.idUser,
+        data.nama,
+        data.role,
+        data.mapel,
+        data.kelas,
+        data.nip,
+        data.status,
+        data.link
+      ]]);
+      return "✅ User berhasil diupdate";
+    }
+  }
+}
+
+// Hapus user
+function deleteUser(idUser) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == idUser) {
+      sheet.deleteRow(i + 1);
+      return "🗑️ User berhasil dihapus";
+    }
+  }
+}
+
+function getAppInfo() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("AppInfo");
+  if (!sheet) return {};
+
+  const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  const values = sheet.getRange(2,1,1,headers.length).getValues()[0];
+
+  let data = {};
+  headers.forEach((h,i)=>{
+    data[h] = values[i];
+  });
+
+  return data;
+}
+
+function updateAppInfo(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("AppInfo");
+  if (!sheet) throw new Error("Sheet AppInfo tidak ditemukan");
+
+  const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+
+  const row = headers.map(h => data[h] || "");
+
+  sheet.getRange(2,1,1,row.length).setValues([row]);
+
+  return "✅ App Info berhasil diupdate";
+}
+
+function getTP() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("Deskripsi");
+  const data = sheet.getDataRange().getValues();
+
+  const headers = data.shift();
+
+  return data.map(row => {
+    return {
+      mapel: row[0],
+      kelas: row[1],
+      semester: row[2],
+      tp: row.slice(3, 13) // TP1 - TP10
+    };
+  });
+}
+
+function getTPFiltered(user) {
+
+  const sheet = SpreadsheetApp.getActive()
+    .getSheetByName("Deskripsi");
+
+  const data = sheet.getDataRange().getValues();
+
+  data.shift(); // hapus header
+
+  const role =
+    String(user.role || "")
+      .trim()
+      .toLowerCase();
+
+  const mapelUser =
+    String(user.mapel || "")
+      .trim()
+      .toLowerCase();
+
+  const kelasUser =
+    String(user.kelas || "")
+      .trim()
+      .toLowerCase();
+
+  return data.filter(row => {
+
+    const mapelSheet =
+      String(row[0] || "")
+        .trim()
+        .toLowerCase();
+
+    const kelasSheet =
+      String(row[1] || "")
+        .trim()
+        .toLowerCase();
+
+    // ADMIN & SUPERADMIN
+    if (
+      role === "admin" ||
+      role === "superadmin"
+    ) {
+      return true;
+    }
+
+    // GURU KELAS
+    if (
+      role === "guru" &&
+      (
+        mapelUser === "semua" ||
+        mapelUser === ""
+      )
+    ) {
+
+      return kelasUser.includes(kelasSheet);
+
+    }
+
+    // GURU MAPEL
+    if (role === "guru") {
+
+      const cocokMapel =
+        mapelSheet === mapelUser ||
+        mapelSheet.includes(mapelUser) ||
+        mapelUser.includes(mapelSheet);
+
+      const cocokKelas =
+        kelasUser.includes(kelasSheet);
+
+      return cocokMapel && cocokKelas;
+
+    }
+
+    return false;
+
+  }).map(row => ({
+    mapel: row[0],
+    kelas: row[1],
+    semester: row[2],
+    tp: row.slice(3, 13)
+  }));
+
+}
+
+function saveTP(data) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("Deskripsi");
+  const values = sheet.getDataRange().getValues();
+
+  // cari baris yang sama (mapel, kelas, semester)
+  let foundRow = -1;
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      values[i][0] == data.mapel &&
+      values[i][1] == data.kelas &&
+      values[i][2] == data.semester
+    ) {
+      foundRow = i + 1;
+      break;
+    }
+  }
+
+  const rowData = [
+    data.mapel,
+    data.kelas,
+    data.semester,
+    ...data.tp
+  ];
+
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+
+  return true;
+}
+
+function deleteTP(data) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("Deskripsi");
+  const values = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      values[i][0] == data.mapel &&
+      values[i][1] == data.kelas &&
+      values[i][2] == data.semester
+    ) {
+      sheet.deleteRow(i + 1);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ================= DATA SISWA CRUD =================
+
+// GET semua data siswa
+function getAllSiswa() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Siswa");
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+
+  return data.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+}
+
+// CREATE
+function addSiswa(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Siswa");
+  const values = sheet.getDataRange().getValues();
+
+  // cek NIS duplikat
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] == data.NIS) {
+      throw new Error("❌ NIS sudah ada!");
+    }
+  }
+
+  const headers = values[0];
+  const newRow = headers.map(h => data[h] || "");
+
+  sheet.appendRow(newRow);
+
+  return "✅ Data siswa berhasil ditambahkan";
+}
+
+// UPDATE
+function updateSiswa(nis, data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Siswa");
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] == nis) {
+
+      let row = values[i];
+
+      headers.forEach((h, idx) => {
+        if (data[h] !== undefined) {
+          row[idx] = data[h];
+        }
+      });
+
+      sheet.getRange(i+1, 1, 1, row.length).setValues([row]);
+      return "✏️ Data siswa berhasil diupdate";
+    }
+  }
+}
+
+// DELETE
+function deleteSiswa(nis) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Siswa");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == nis) {
+      sheet.deleteRow(i+1);
+      return "🗑️ Data siswa berhasil dihapus";
+    }
+  }
+}
+
+function exportTPExcel() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Deskripsi");
+
+  if (!sheet) {
+    throw new Error("Sheet 'Deskripsi' tidak ditemukan!");
+  }
+
+  // 🔥 ambil ID spreadsheet & GID sheet
+  const spreadsheetId = ss.getId();
+  const gid = sheet.getSheetId();
+
+  // 🔥 URL export langsung (INI KUNCI UTAMA)
+  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx&gid=${gid}`;
+
+  const token = ScriptApp.getOAuthToken();
+
+  const response = UrlFetchApp.fetch(url, {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  const blob = response.getBlob();
+
+  return Utilities.base64Encode(blob.getBytes());
+}
+
+function importTPExcel(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = "Deskripsi";
+
+  let sheet = ss.getSheetByName(sheetName);
+
+  // 🔥 kalau belum ada → buat
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+
+  // 🔥 header standar
+  const header = [
+    "Mapel","Kelas","Semester",
+    "TP1","TP2","TP3","TP4","TP5",
+    "TP6","TP7","TP8","TP9","TP10"
+  ];
+
+  // 🔥 reset isi (opsional → overwrite)
+  sheet.clear();
+
+  // tulis header
+  sheet.getRange(1,1,1,header.length).setValues([header]);
+
+  const rows = [];
+
+  data.forEach(d => {
+    rows.push([
+      d["Mapel"] || "",
+      d["Kelas"] || "",
+      d["Semester"] || "",
+      d["TP1"] || "",
+      d["TP2"] || "",
+      d["TP3"] || "",
+      d["TP4"] || "",
+      d["TP5"] || "",
+      d["TP6"] || "",
+      d["TP7"] || "",
+      d["TP8"] || "",
+      d["TP9"] || "",
+      d["TP10"] || ""
+    ]);
+  });
+
+  if (rows.length > 0) {
+    sheet.getRange(2,1,rows.length,rows[0].length).setValues(rows);
+  }
+
+   // 🔥 SIMPAN DI SINI (PALING BAWAH)
+  return `Upload berhasil: ${rows.length} data TP masuk ke sistem`;
+}
+
+function tambahMapel(nama) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (ss.getSheetByName(nama)) {
+    return "Mapel sudah ada!";
+  }
+
+  const sheet = ss.insertSheet(nama);
+
+  sheet.appendRow([
+    "NIS","Nama","Kelas","Mapel",
+    "TP1","TP2","TP3","TP4","TP5",
+    "TP6","TP7","TP8","TP9","TP10"
+  ]);
+
+  return "Mapel berhasil ditambahkan";
+}
+
+function hapusMapel(nama) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(nama);
+
+  if (!sheet) throw new Error("Sheet tidak ditemukan");
+
+  ss.deleteSheet(sheet);
+
+  return "Mapel berhasil dihapus";
+}
+
+function clearIsiMapel(nama) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(nama);
+
+  if (!sheet) throw new Error("Sheet tidak ditemukan");
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow <= 1) {
+    return "Tidak ada data untuk dihapus";
+  }
+
+  // 🔥 Hapus isi TANPA header
+  sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+
+  return "Isi mapel berhasil dibersihkan";
+}
+
+function getKelasList() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Data Siswa");
+
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+
+  const kelasSet = new Set();
+
+  data.slice(1).forEach(r => {
+    if (r[2]) kelasSet.add(r[2]);
+  });
+
+  return [...kelasSet].sort();
+}
+
+function exportExcel(mapel, kelas) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(mapel);
+
+  if (!sheet) throw new Error("Sheet tidak ditemukan: " + mapel);
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) throw new Error("Data kosong");
+
+  const header = data[0];
+
+  // 🔥 DETEKSI KOLOM KELAS OTOMATIS
+  const colKelas = header.findIndex(h =>
+    String(h).toLowerCase().includes("kelas")
+  );
+
+  if (colKelas === -1) throw new Error("Kolom KELAS tidak ditemukan");
+
+  // 🔥 NORMALISASI INPUT
+  const kelasInput = String(kelas).replace(/\s/g, "").toLowerCase();
+
+  // 🔥 FILTER DATA (SUPER AMAN)
+  const filtered = data.filter((r, i) => {
+    if (i === 0) return true;
+
+    const kelasSheet = String(r[colKelas] || "")
+      .replace(/\s/g, "")
+      .toLowerCase();
+
+    return kelasSheet === kelasInput;
+  });
+
+  if (filtered.length <= 1) {
+    throw new Error(`Data kelas "${kelas}" tidak ditemukan di sheet "${mapel}"`);
+  }
+
+  // ================= IDENTITAS =================
+  let tahunAjaran = "2025_2026";
+  let semester = "ganjil";
+
+  const identitas = ss.getSheetByName("Identitas");
+
+  if (identitas) {
+    const row = identitas.getDataRange().getValues()[1];
+
+    tahunAjaran = String(row[6] || "").replace(/[-/]/g, "_");
+    semester = String(row[7] || "").toLowerCase() || "ganjil";
+  }
+
+  // ================= BUAT FILE TEMP =================
+  const temp = SpreadsheetApp.create(`TEMP_${mapel}_${kelas}`);
+  const tempSheet = temp.getSheets()[0];
+
+  // 🔥 PASTIKAN DATA MASUK
+  tempSheet.getRange(1, 1, filtered.length, filtered[0].length)
+    .setValues(filtered);
+
+  SpreadsheetApp.flush(); // 🔥 WAJIB biar data benar-benar masuk
+
+  // ================= EXPORT XLSX =================
+  const url = `https://docs.google.com/spreadsheets/d/${temp.getId()}/export?format=xlsx`;
+
+  const response = UrlFetchApp.fetch(url, {
+    headers: {
+      Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
+    }
+  });
+
+  const blob = response.getBlob();
+  const base64 = Utilities.base64Encode(blob.getBytes());
+
+  // 🔥 HAPUS FILE TEMP
+  DriveApp.getFileById(temp.getId()).setTrashed(true);
+
+  return {
+    data: base64,
+    tahunAjaran,
+    semester,
+    kelas,
+    mapel
+  };
+}
+
+function getNilaiSiswa(nisnLogin) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+
+  let hasil = [];
+
+  sheets.forEach(sheet => {
+    const namaSheet = sheet.getName();
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return;
+    const header = data[0];
+    // 🔒 hanya sheet mapel
+    if (!(header[0] === "NIS" && header[3] === "Mapel")) return;
+    data.slice(1).forEach(r => {
+      const nisGabungan = String(r[0] || "");
+      // 🔥 AMBIL NISN
+      const nisn = nisGabungan.includes("/")
+        ? nisGabungan.split("/")[1].trim()
+        : nisGabungan.trim();
+
+      // 🔥 COCOKKAN LOGIN
+      if (nisn === String(nisnLogin).trim()) {
+
+        hasil.push({
+          mapel: namaSheet,
+          rataRata: r[14] || 0,
+          predikat: r[15] || "-"
+        });
+      }
+    });
+  });
+  return hasil;
+}
+
+function perbaikiSemuaNilai() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  sheets.forEach(sheet => {
+
+    const header = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+
+    if (!header.includes("TP1")) return;
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      saveOrUpdateData({
+        nis: row[0],
+        nama: row[1],
+        kelas: row[2],
+        mapel: row[3],
+        tps: row.slice(4,14)
+      });
+    }
+  });
+  return "Semua sheet mapel berhasil diperbaiki";
+}
+
+function getNilaiChartSiswa(userId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const semuaSheet = ss.getSheets();
+  const hasil = [];
+  // normalisasi user login
+  const userLogin = String(userId || "")
+    .trim();
+  semuaSheet.forEach(sh => {
+    const namaSheet = sh.getName();
+    // skip sheet sistem
+    const skipSheet = [
+      "Users",
+      "Data Siswa",
+      "Data Guru",
+      "Kelas",
+      "TP",
+      "Dashboard"
+    ];
+    if (skipSheet.includes(namaSheet)) return;
+    const data = sh.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      // kolom A
+      const nisCell = String(row[0] || "")
+        .trim();
+      // contoh:
+      // 202101007 / 0131095217
+      let nisBelakang = nisCell;
+      // ambil bagian belakang jika ada "/"
+      if (nisCell.includes("/")) {
+        nisBelakang = nisCell
+          .split("/")
+          .pop()
+          .trim();
+      }
+      // 🔥 HARUS SAMA PERSIS
+      if (
+        nisBelakang === userLogin ||
+        nisCell === userLogin
+      ) {
+        hasil.push({
+          mapel: namaSheet,
+          nilai: Number(row[14]) || 0
+        });
+        break;
+      }
+    }
+  });
+  return hasil;
+}
+
+function saveAllUsers(users) {
+
+  const sh =
+    SpreadsheetApp.getActiveSpreadsheet()
+      .getSheetByName("Users");
+
+  const data =
+    sh.getDataRange().getValues();
+
+  users.forEach(user => {
+
+    for (let i = 1; i < data.length; i++) {
+
+      if (
+        String(data[i][0]).trim() ===
+        String(user.idUser).trim()
+      ) {
+
+        sh.getRange(i + 1, 2).setValue(user.nama);
+        sh.getRange(i + 1, 3).setValue(user.role);
+        sh.getRange(i + 1, 4).setValue(user.mapel);
+        sh.getRange(i + 1, 5).setValue(user.kelas);
+        sh.getRange(i + 1, 6).setValue(user.nip);
+        sh.getRange(i + 1, 7).setValue(user.status);
+
+        break;
+
+      }
+
+    }
+
+  });
+
+  return true;
+
+}
+
+// =====================================================
+// SIMPAN PESAN MAPEL GURU
+// =====================================================
+function savePesanMapel(user, mapelList) {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  let sheet =
+    ss.getSheetByName("PesanMapel");
+
+  // =================================================
+  // BUAT SHEET JIKA BELUM ADA
+  // =================================================
+  if (!sheet) {
+
+    sheet = ss.insertSheet("PesanMapel");
+
+    sheet.appendRow([
+      "IDUser",
+      "Nama",
+      "Mapel"
+    ]);
+  }
+
+  const data =
+    sheet.getDataRange().getValues();
+
+  // =================================================
+  // HAPUS HANYA DATA MILIK GURU YANG LOGIN
+  // =================================================
+
+  for (let i = data.length - 1; i >= 1; i--) {
+
+    const namaGuru =
+      String(data[i][1] || "")
+      .trim()
+      .toLowerCase();
+
+    const namaLogin =
+      String(user.nama || "")
+      .trim()
+      .toLowerCase();
+
+    // hanya hapus milik guru login
+    if (namaGuru === namaLogin) {
+
+      sheet.deleteRow(i + 1);
+    }
+  }
+
+  // =================================================
+  // SIMPAN DATA BARU
+  // =================================================
+
+  mapelList.forEach(mapel => {
+
+    sheet.appendRow([
+
+      user.idUser || "",
+      user.nama || "",
+      mapel || ""
+
+    ]);
+  });
+
+  return "Pesanan mapel berhasil disimpan";
+}
+
+// ===============================
+// AMBIL DATA PESAN MAPEL
+// ===============================
+function getPesanMapel() {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet = ss.getSheetByName("PesanMapel");
+
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+
+  return data
+    .slice(1)
+    .map(r => ({
+
+      idUser: r[0],
+      nama: r[1],
+      mapel: r[2]
+
+    }));
+}
+
+// =====================================================
+// AMBIL MAPEL BERDASARKAN NAMA GURU
+// Sheet: PesanMapel
+// Kolom:
+// A = IDUser
+// B = Nama
+// C = Mapel
+// =====================================================
+function getMapelPesananGuru(namaGuru) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet =
+    ss.getSheetByName("PesanMapel");
+
+  if (!sheet) return [];
+  const data =
+    sheet.getDataRange().getValues();
+  let hasil = [];
+  for (let i = 1; i < data.length; i++) {
+    const nama =
+      String(data[i][1] || "")
+      .trim()
+      .toLowerCase();
+    const mapel =
+      String(data[i][2] || "")
+      .trim();
+    // cocokkan nama guru
+    if (
+      nama ===
+      String(namaGuru)
+        .trim()
+        .toLowerCase()
+    ) {
+      if (mapel) {
+        hasil.push(mapel);
+      }
+    }
+  }
+  // hapus duplikat
+  hasil = [...new Set(hasil)];
+  Logger.log(hasil);
+  return hasil;
+}
+
+// =====================================================
+// AMBIL MAPEL AKTIF SISWA
+// =====================================================
+function getMapelAktifSiswa(kelasSiswa) {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheetPesan =
+    ss.getSheetByName("PesanMapel");
+
+  const sheetUser =
+    ss.getSheetByName("Users");
+
+  if (!sheetPesan || !sheetUser) {
+    return [];
+  }
+
+  const dataPesan =
+    sheetPesan.getDataRange().getValues();
+
+  const dataUser =
+    sheetUser.getDataRange().getValues();
+
+  let mapelAktif = [];
+
+  kelasSiswa =
+    String(kelasSiswa || "")
+    .trim()
+    .toLowerCase();
+
+  Logger.log("KELAS SISWA: " + kelasSiswa);
+
+  // =================================================
+  // LOOP DATA USER
+  // =================================================
+
+  for (let i = 1; i < dataUser.length; i++) {
+
+    // ================= STRUKTUR DATAUSER =================
+    // A = IDUser
+    // B = Nama
+    // C = Role
+    // D = Mapel
+    // E = Kelas
+    // =================================================
+
+    const namaGuru =
+      String(dataUser[i][1] || "")
+      .trim();
+
+    const role =
+      String(dataUser[i][2] || "")
+      .trim()
+      .toLowerCase();
+
+    const kelasGuruRaw =
+      String(dataUser[i][4] || "")
+      .trim()
+      .toLowerCase();
+
+    // hanya guru
+    if (role !== "guru") continue;
+
+    // pecah kelas
+    const kelasGuruList =
+      kelasGuruRaw
+      .split(/[;,]/)
+      .map(k => k.trim());
+
+    Logger.log(
+      "KELAS GURU: " +
+      kelasGuruList.join(", ")
+    );
+
+    // cocok kelas
+    const cocok =
+      kelasGuruList.includes(kelasSiswa);
+
+    if (!cocok) continue;
+
+    Logger.log(
+      "GURU COCOK: " + namaGuru
+    );
+
+    // =================================================
+    // AMBIL MAPEL PESANAN
+    // =================================================
+
+    for (let j = 1; j < dataPesan.length; j++) {
+
+      const namaPesan =
+        String(dataPesan[j][1] || "")
+        .trim();
+
+      const mapel =
+        String(dataPesan[j][2] || "")
+        .trim();
+
+      if (
+        namaPesan === namaGuru &&
+        mapel
+      ) {
+
+        mapelAktif.push(mapel);
+      }
+    }
+  }
+
+  // hapus duplikat
+  mapelAktif = [...new Set(mapelAktif)];
+
+  Logger.log(mapelAktif);
+
+  return mapelAktif;
+}
+
+function getMapelAktifRapor(namaGuru) {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName("PesanMapel");
+
+  if (!sh) return [];
+
+  const data = sh.getDataRange().getValues();
+
+  const hasil = [];
+
+  for (let i = 1; i < data.length; i++) {
+
+    const nama = String(data[i][1] || "").trim();
+    const mapel = String(data[i][2] || "").trim();
+
+    if (
+      nama.toLowerCase() ===
+      String(namaGuru).trim().toLowerCase()
+    ) {
+      hasil.push(mapel);
+    }
+  }
+
+  Logger.log("HASIL MAPEL:");
+  Logger.log(hasil);
+
+  return hasil;
+}
+
+// =====================================================
+// FILTER MAPEL RAPOR SESUAI PESANMAPEL
+// =====================================================
+function filterMapelRapor(kelas, mapelData) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheetPesan =
+    ss.getSheetByName("PesanMapel");
+
+  const sheetUser =
+    ss.getSheetByName("DataUser");
+
+  if (!sheetPesan || !sheetUser) {
+    return mapelData;
+  }
+
+  const dataPesan =
+    sheetPesan.getDataRange().getValues();
+
+  const dataUser =
+    sheetUser.getDataRange().getValues();
+
+  let mapelAktif = [];
+
+  kelas =
+    String(kelas || "")
+    .trim()
+    .toLowerCase();
+
+  // ================= CARI GURU =================
+  for (let i = 1; i < dataUser.length; i++) {
+
+    const namaGuru =
+      String(dataUser[i][1] || "")
+      .trim();
+
+    const role =
+      String(dataUser[i][2] || "")
+      .trim()
+      .toLowerCase();
+
+    const kelasGuruRaw =
+      String(dataUser[i][4] || "")
+      .trim()
+      .toLowerCase();
+
+    if (role !== "guru") continue;
+
+    const kelasGuru =
+      kelasGuruRaw
+      .split(/[;,]/)
+      .map(k => k.trim());
+
+    if (!kelasGuru.includes(kelas)) continue;
+
+    // ================= AMBIL MAPEL =================
+    for (let j = 1; j < dataPesan.length; j++) {
+
+      const namaPesan =
+        String(dataPesan[j][1] || "")
+        .trim();
+
+      const mapel =
+        String(dataPesan[j][2] || "")
+        .trim();
+
+      if (
+        namaPesan === namaGuru &&
+        mapel
+      ) {
+
+        mapelAktif.push(mapel);
+      }
+    }
+  }
+
+  // hapus duplikat
+  mapelAktif = [...new Set(mapelAktif)];
+
+  // ================= FILTER NILAI =================
+  const hasil =
+    mapelData.filter(m =>
+
+      mapelAktif.includes(
+        String(m.mapel || "").trim()
+      )
+
+    );
+
+  return hasil;
+}
+
+function ambilDataLegerDb(kelasPilihan) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetDb = ss.getSheetByName("DATABASE_NILAI");
+    
+    if (!sheetDb) {
+      return { success: false, error: "Sheet 'DATABASE_NILAI' tidak ditemukan!" };
+    }
+    
+    const targetKelas = String(kelasPilihan || "").trim().toLowerCase();
+    const data = sheetDb.getDataRange().getValues();
+    
+    // nama file yang spesifik untuk kelas ini
+    const namaFileTemp = "LEGER_KELAS_" + kelasPilihan.toUpperCase();
+
+    // SINKRONISASI SAMPAH: Hapus file lama dengan nama yang sama di Drive agar tidak menumpuk
+    try {
+      const filesLama = DriveApp.getFilesByName(namaFileTemp);
+      while (filesLama.hasNext()) {
+        const fileLama = filesLama.next();
+        fileLama.setTrashed(true);
+      }
+    } catch (e) {
+      // Lewati jika DriveApp belum diberi izin di awal, tidak akan membuat sistem mogok
+    }
+    
+    // 1. Buat Spreadsheet sementara baru
+    const tempSs = SpreadsheetApp.create(namaFileTemp);
+    const tempSheet = tempSs.getSheets()[0];
+    
+    // Ambil Header baris pertama
+    const headers = data[0].map(h => String(h).trim());
+    tempSheet.appendRow(headers);
+    
+    // 2. Filter siswa berdasarkan kelas dan masukkan barisnya langsung
+    let adaSiswa = false;
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const kelas = row[2] ? String(row[2]).trim() : "";
+      
+      if (kelas.toLowerCase() !== targetKelas) continue;
+      
+      // Bersihkan nilai dari error #DIV/0! sebelum dimasukkan ke Excel
+      const cleanRow = row.map((val, idx) => {
+        if (idx === 0) return String(val || ""); // Kunci NIS tetap string
+        if (String(val).includes("#") || val === "NaN") return 0;
+        return val;
+      });
+      
+      tempSheet.appendRow(cleanRow);
+      adaSiswa = true;
+    }
+    
+    // Jika tidak ada siswa di kelas tersebut, hapus spreadsheet sementara
+    if (!adaSiswa) {
+      DriveApp.getFileById(tempSs.getId()).setTrashed(true);
+      return { success: true, dataSiswa: [] };
+    }
+    
+    // Terapkan perubahan data ke memori sebelum melebarkan kolom
+    SpreadsheetApp.flush();
+    
+    // 3. Auto-fit kolom agar rapi saat dibuka di Microsoft Excel
+    for (let col = 1; col <= headers.length; col++) {
+      tempSheet.autoResizeColumn(col);
+    }
+    
+    // Ambil URL ekspor ke format Excel asli (.xlsx)
+    const fileId = tempSs.getId();
+    const fetchUrl = "https://docs.google.com/spreadsheets/d/" + fileId + "/export?format=xlsx";
+
+    return {
+      success: true,
+      downloadUrl: fetchUrl,
+      dataSiswa: [1] // Penanda data ditemukan
+    };
+    
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+// 🔥 FUNGSI BACKEND FIX MUTLAK: DISESUAIKAN DENGAN STRUKTUR HORIZONTAL SHEET APPINFO
+function getAppInfo() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("AppInfo"); 
+    
+    var appData = {
+      "Nama Aplikasi": "",
+      "Versi": "",
+      "Versi Database": "",
+      "Tahun Rilis": "",
+      "Developer": "",
+      "Status": "Online" // Default aman
+    };
+
+    if (sheet) {
+      // Ambil Baris 1 (Nama Kolom) dan Baris 2 (Isi Data)
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var values = sheet.getRange(2, 1, 1, sheet.getLastColumn()).getValues()[0];
+      
+      // Lakukan loop secara horizontal (Ke samping kolom demi kolom)
+      for (var i = 0; i < headers.length; i++) {
+        var key = headers[i] ? headers[i].toString().trim() : "";
+        var val = values[i] ? values[i].toString().trim() : "";
+        
+        // Jika nama kolom cocok dengan kriteria objek appData
+        if (key && appData.hasOwnProperty(key)) {
+          appData[key] = val;
+        }
+      }
+    }
+    
+    Logger.log("Berhasil mengirim data AppInfo: " + JSON.stringify(appData));
+    return appData;
+
+  } catch (error) {
+    Logger.log("Error pada fungsi getAppInfo: " + error.toString());
+    return { "Status": "Online" };
+  }
+}
+
+// ====== TAMBAHKAN di Code.gs (paling bawah) ======
+
+// Daftar fungsi yang boleh dipanggil dari website (whitelist)
+const API_WHITELIST = [
+  "addSiswa",
+  "ambilDataLegerDb",
+  "clearIsiMapel",
+  "deleteSiswa",
+  "deleteTP",
+  "deleteUser",
+  "exportExcel",
+  "exportTPExcel",
+  "getAbsensiByKelas",
+  "getAllSiswa",
+  "getAllUsers",
+  "getAppInfo",
+  "getChartData",
+  "getIdentitasSekolah",
+  "getKelas",
+  "getKelasList",
+  "getMapelAktifSiswa",
+  "getMapelList",
+  "getMapelPesananGuru",
+  "getNilaiChartSiswa",
+  "getNilaiSiswa",
+  "getPesanMapel",
+  "getRaporSiswa",
+  "getSiswaByKelas",
+  "getTPFiltered",
+  "getUserById",
+  "hapusMapel",
+  "importTPExcel",
+  "logUserAccess",
+  "processUploadData",
+  "processUploadIdentitas",
+  "processUploadSiswa",
+  "registerUser",
+  "saveAbsensi",
+  "saveAllUsers",
+  "saveBatchNilai",
+  "saveOrUpdateData",
+  "savePesanMapel",
+  "saveTP",
+  "syncDataSiswaToMapel",
+  "tambahMapel",
+  "updateAppInfo",
+  "updateIdentitasSekolah",
+  "updateSiswa",
+  "updateUser"
+];
+
+function doPost(e) {
+  let out;
+  try {
+    const req = JSON.parse(e.postData.contents);
+    if (API_WHITELIST.indexOf(req.fn) === -1) {
+      throw new Error("Fungsi tidak diizinkan: " + req.fn);
+    }
+    const fn = this[req.fn];
+    if (typeof fn !== "function") throw new Error("Fungsi tidak ditemukan: " + req.fn);
+    const result = fn.apply(null, req.args || []);
+    out = { ok: true, result: (result === undefined ? null : result) };
+  } catch (err) {
+    out = { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(out))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// doGet versi baru (menggantikan doGet lama) - hanya cek status API
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, app: "rakumaku-api" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
