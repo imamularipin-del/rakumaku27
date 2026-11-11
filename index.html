@@ -3019,6 +3019,7 @@ function cetakRapor(nis) {
 
         <body>
 
+        ${data.tampilBiodata === false ? "" : `
         <!-- ====================== HALAMAN 1 ====================== -->
         <h3 style="text-align:center; margin-bottom:20px;">BIODATA PESERTA DIDIK</h3>
         <table class="table-nilai">
@@ -3052,6 +3053,7 @@ function cetakRapor(nis) {
           </div>
         </div>
         <div style="page-break-after: always;"></div>
+        `}
 
         <!-- ====================== HALAMAN 2 ====================== -->
         <div class="kop-rapor">
