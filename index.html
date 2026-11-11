@@ -417,6 +417,11 @@
         📚 Mapel
       </button>
 
+      <button onclick="showTab('aturanmapel')" id="tabAturanMapel"
+        class="px-4 py-2 rounded bg-gray-300 transition hidden">
+        📐 Aturan Mapel
+      </button>
+
       <button onclick="showTab('nilaisiswa')"
         id="tabNilaiSaya"
         class="px-4 py-2 rounded bg-gray-300 transition hidden">
@@ -1022,6 +1027,45 @@
       </thead>
       <tbody id="tabelMapel"></tbody>
     </table>
+  </div>
+</section>
+
+<!-- ================= TAB ATURAN MAPEL (SUPERADMIN) ================= -->
+<section id="tab-content-aturanmapel" class="hidden space-y-4">
+  <h2 class="text-xl font-bold">📐 Aturan Mapel di Rapor</h2>
+
+  <div class="bg-blue-50 border border-blue-200 text-blue-900 text-sm p-3 rounded">
+    <ul class="list-disc ml-5 space-y-1">
+      <li><b>Urutan</b>: nomor urut mapel di tabel rapor (kosong = ditaruh paling bawah).</li>
+      <li><b>Nama Tampil</b>: nama resmi yang dicetak di rapor (kosong = pakai nama mapel).</li>
+      <li><b>Kelas Min – Maks</b>: mapel hanya tampil untuk kelas dalam rentang ini. Mapel yang tidak terdaftar di sini tampil di semua kelas.</li>
+    </ul>
+  </div>
+
+  <div class="bg-white p-4 rounded shadow overflow-auto">
+    <datalist id="daftarMapelAturan"></datalist>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="p-2 w-20">Urutan</th>
+          <th class="p-2 text-left">Mapel (nama di sheet)</th>
+          <th class="p-2 text-left">Nama Tampil di Rapor</th>
+          <th class="p-2 w-24">Kelas Min</th>
+          <th class="p-2 w-24">Kelas Maks</th>
+          <th class="p-2 w-16">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelAturanMapel"></tbody>
+    </table>
+
+    <div class="mt-4 flex flex-wrap gap-2">
+      <button onclick="tambahBarisAturan()"
+        class="bg-green-600 text-white px-4 py-2 rounded">➕ Tambah Baris</button>
+      <button onclick="simpanAturanMapel()"
+        class="bg-blue-600 text-white px-4 py-2 rounded">💾 Simpan Aturan</button>
+      <button onclick="loadAturanMapel()"
+        class="bg-gray-400 text-white px-4 py-2 rounded">↩️ Muat Ulang</button>
+    </div>
   </div>
 </section>
 
@@ -2161,6 +2205,7 @@ function renderTabelAbsensiPerHalaman() {
         "tabTp",
         "tabDatasiswa",
         "tabMapel",
+        "tabAturanMapel",
         "tabNilaiSaya",
         "tabPesanMapel"
       ];
@@ -2282,6 +2327,9 @@ function renderTabelAbsensiPerHalaman() {
             ?.classList.remove("hidden");
 
           document.getElementById("tabAppInfo")
+            ?.classList.remove("hidden");
+
+          document.getElementById("tabAturanMapel")
             ?.classList.remove("hidden");
 
         }
@@ -3490,6 +3538,7 @@ function showTab(tab) {
     'tp',
     'datasiswa',
     'mapel',
+    'aturanmapel',
     'nilaisiswa',
     'pesanmapel'
   ];
@@ -3506,6 +3555,7 @@ function showTab(tab) {
     tp: "tabTp",
     datasiswa: "tabDatasiswa",
     mapel: "tabMapel",
+    aturanmapel: "tabAturanMapel",
     nilaisiswa: "tabNilaiSaya",
     pesanmapel: "tabPesanMapel"
   };
@@ -3605,6 +3655,10 @@ function showTab(tab) {
 
     case 'mapel':
       loadMapel();
+      break;
+
+    case 'aturanmapel':
+      loadAturanMapel();
       break;
 
     case 'nilaisiswa':
@@ -4998,6 +5052,119 @@ function hapusMapel(nama) {
     });
 }
 
+// =====================================================
+// ATURAN MAPEL (KHUSUS SUPERADMIN)
+// =====================================================
+let aturanMapelData = [];
+
+function escAturan_(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function loadAturanMapel() {
+  const idUser = localStorage.getItem("userId") || "";
+  notifLoading("Memuat aturan mapel...");
+
+  google.script.run
+    .withSuccessHandler(res => {
+      closeLoading();
+      aturanMapelData = res.rows || [];
+
+      const dl = document.getElementById("daftarMapelAturan");
+      if (dl) {
+        dl.innerHTML = (res.daftarMapel || [])
+          .map(m => `<option value="${escAturan_(m)}"></option>`)
+          .join("");
+      }
+
+      renderAturanMapel();
+    })
+    .withFailureHandler(err => {
+      closeLoading();
+      notifError(err.message || err);
+    })
+    .getAturanMapelList(idUser);
+}
+
+function renderAturanMapel() {
+  const tbody = document.getElementById("tabelAturanMapel");
+  if (!tbody) return;
+
+  if (!aturanMapelData.length) {
+    tbody.innerHTML = "<tr><td colspan='6' class='p-3 text-center text-gray-500'>Belum ada aturan. Klik ➕ Tambah Baris.</td></tr>";
+    return;
+  }
+
+  const opsiKelas = pilih =>
+    [1, 2, 3, 4, 5, 6]
+      .map(k => `<option value="${k}" ${Number(pilih) === k ? "selected" : ""}>${k}</option>`)
+      .join("");
+
+  tbody.innerHTML = aturanMapelData.map((r, i) => `
+    <tr class="border-b">
+      <td class="p-1">
+        <input type="number" min="1" value="${escAturan_(r.urut)}"
+          oninput="aturanMapelData[${i}].urut=this.value"
+          class="border px-2 py-1 rounded w-full text-center">
+      </td>
+      <td class="p-1">
+        <input type="text" list="daftarMapelAturan" value="${escAturan_(r.mapel)}"
+          oninput="aturanMapelData[${i}].mapel=this.value"
+          class="border px-2 py-1 rounded w-full">
+      </td>
+      <td class="p-1">
+        <input type="text" value="${escAturan_(r.tampil)}"
+          oninput="aturanMapelData[${i}].tampil=this.value"
+          class="border px-2 py-1 rounded w-full">
+      </td>
+      <td class="p-1">
+        <select onchange="aturanMapelData[${i}].min=this.value"
+          class="border px-2 py-1 rounded w-full">${opsiKelas(r.min)}</select>
+      </td>
+      <td class="p-1">
+        <select onchange="aturanMapelData[${i}].max=this.value"
+          class="border px-2 py-1 rounded w-full">${opsiKelas(r.max)}</select>
+      </td>
+      <td class="p-1 text-center">
+        <button onclick="hapusBarisAturan(${i})"
+          class="bg-red-600 text-white px-2 py-1 rounded">🗑️</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function tambahBarisAturan() {
+  aturanMapelData.push({ mapel: "", min: 1, max: 6, urut: "", tampil: "" });
+  renderAturanMapel();
+}
+
+function hapusBarisAturan(i) {
+  aturanMapelData.splice(i, 1);
+  renderAturanMapel();
+}
+
+function simpanAturanMapel() {
+  const idUser = localStorage.getItem("userId") || "";
+
+  notifLoading("Menyimpan aturan mapel...");
+
+  google.script.run
+    .withSuccessHandler(msg => {
+      closeLoading();
+      notifSukses(msg);
+      loadAturanMapel();
+    })
+    .withFailureHandler(err => {
+      closeLoading();
+      notifError(err.message || err);
+    })
+    .saveAturanMapel(idUser, aturanMapelData);
+}
+
 function loadDownloadOptions() {
 
   const role = (localStorage.getItem("roleUser") || "").toLowerCase();
@@ -5357,6 +5524,7 @@ function setupSiswaMode() {
     'tabTp',
     'tabDatasiswa',
     'tabMapel',
+    'tabAturanMapel',
     'tabAppinfo',
     'tabIdentitas'
   ];
@@ -5424,6 +5592,9 @@ function resetRoleTabs() {
     ?.classList.add("hidden");
 
   document.getElementById("tabMapel")
+    ?.classList.add("hidden");
+
+  document.getElementById("tabAturanMapel")
     ?.classList.add("hidden");
 
 }
