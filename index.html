@@ -597,6 +597,28 @@
         </div>
       </div>
 
+      <!-- Template & Unggah Absensi (Excel) -->
+      <div class="bg-white p-4 rounded-lg shadow space-y-3">
+        <p class="text-sm text-gray-600">
+          Pilih kelas, unduh template, isi di Excel, lalu unggah kembali.
+          Jangan ubah kolom <b>NIS</b>. Hanya siswa pada kelas yang dipilih yang akan diproses.
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="unduhTemplateAbsensi()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            📥 Unduh Template
+          </button>
+
+          <input type="file" id="uploadAbsensiFile" accept=".xlsx,.xls"
+            class="border rounded px-2 py-1 text-sm">
+
+          <button onclick="unggahAbsensi()"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+            📤 Unggah Absensi
+          </button>
+        </div>
+      </div>
+
       <!-- Tabel -->
       <div class="overflow-x-auto bg-white rounded-lg shadow">
         <table class="min-w-[1200px] w-full table-auto text-sm">
@@ -1424,7 +1446,7 @@
       closeLoading();
       notifError("Gagal load absensi: " + (err.message || err));
     })
-    .getAbsensiByKelas(kelas);
+    .getAbsensiByKelas(kelas, localStorage.getItem("userId") || "");
 }
 
 // Fungsi Baru: Khusus untuk memotong dan menampilkan data per halaman
@@ -1507,6 +1529,175 @@ function renderTabelAbsensiPerHalaman() {
   tbody.classList.add("animate-fade");
 }
 
+// =====================================================
+// TEMPLATE & UNGGAH ABSENSI (EXCEL)
+// =====================================================
+const KOLOM_ABSENSI_ = [
+  "NIS", "Nama", "Kelas", "Sakit", "Izin", "Alpa",
+  "Tinggi", "Berat", "Ekskul", "Nilai Ekskul", "Keterangan"
+];
+
+function unduhTemplateAbsensi() {
+  const kelas = document.getElementById("filterKelasAbsensi")?.value;
+  if (!kelas) {
+    notifWarning("Pilih kelas terlebih dahulu");
+    return;
+  }
+
+  notifLoading("Menyiapkan template...");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      closeLoading();
+
+      const baris = (data || []).map(s => ({
+        "NIS": String(s.nis),
+        "Nama": s.nama,
+        "Kelas": s.kelas,
+        "Sakit": s.sakit || 0,
+        "Izin": s.izin || 0,
+        "Alpa": s.alpa || 0,
+        "Tinggi": s.tb || "",
+        "Berat": s.bb || "",
+        "Ekskul": s.ekskul || "",
+        "Nilai Ekskul": s.nilaiEkskul || "",
+        "Keterangan": s.ketEkskul || ""
+      }));
+
+      if (!baris.length) {
+        notifWarning("Tidak ada siswa pada kelas " + kelas);
+        return;
+      }
+
+      const ws = XLSX.utils.json_to_sheet(baris, { header: KOLOM_ABSENSI_ });
+      ws["!cols"] = [
+        { wch: 14 }, { wch: 32 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 },
+        { wch: 9 }, { wch: 9 }, { wch: 22 }, { wch: 14 }, { wch: 30 }
+      ];
+
+      const petunjuk = XLSX.utils.aoa_to_sheet([
+        ["PETUNJUK PENGISIAN ABSENSI KELAS " + kelas],
+        [""],
+        ["1. Isi kolom Sakit, Izin, Alpa (angka hari), Tinggi, Berat, Ekskul, Nilai Ekskul, dan Keterangan."],
+        ["2. Jangan mengubah, menghapus, atau menambah NIS. Kolom Nama dan Kelas hanya sebagai rujukan."],
+        ["3. Hanya siswa pada kelas " + kelas + " yang akan disimpan; baris lain akan ditolak."],
+        ["4. Simpan file tetap dalam format .xlsx atau .xls, lalu unggah kembali di tab Absensi."]
+      ]);
+      petunjuk["!cols"] = [{ wch: 100 }];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Absensi");
+      XLSX.utils.book_append_sheet(wb, petunjuk, "Petunjuk");
+
+      XLSX.writeFile(wb, "Template_Absensi_Kelas_" + String(kelas).replace(/[^\w-]/g, "_") + ".xlsx");
+    })
+    .withFailureHandler(err => {
+      closeLoading();
+      notifError(err.message || err);
+    })
+    .getAbsensiByKelas(kelas, localStorage.getItem("userId") || "");
+}
+
+function unggahAbsensi() {
+  const kelas = document.getElementById("filterKelasAbsensi")?.value;
+  const input = document.getElementById("uploadAbsensiFile");
+  const file = input?.files?.[0];
+
+  if (!kelas) {
+    notifWarning("Pilih kelas terlebih dahulu");
+    return;
+  }
+  if (!file) {
+    notifWarning("Pilih file Excel terlebih dahulu");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    let rows;
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
+    } catch (err) {
+      notifError("File tidak dapat dibaca: " + err.message);
+      return;
+    }
+
+    // petakan judul kolom secara fleksibel
+    const alias = {
+      nis: ["nis"],
+      sakit: ["sakit", "s"],
+      izin: ["izin", "i"],
+      alpa: ["alpa", "alpha", "a"],
+      tb: ["tinggi", "tinggi badan", "tb"],
+      bb: ["berat", "berat badan", "bb"],
+      ekskul: ["ekskul", "ekstrakurikuler"],
+      nilaiEkskul: ["nilai ekskul", "nilai ekstrakurikuler"],
+      ketEkskul: ["keterangan", "ket", "catatan"]
+    };
+
+    const ambil = (r, kunci) => {
+      for (const h of Object.keys(r)) {
+        if (alias[kunci].indexOf(String(h).trim().toLowerCase()) !== -1) return r[h];
+      }
+      return "";
+    };
+
+    const data = rows.map(r => ({
+      nis: String(ambil(r, "nis")).trim(),
+      sakit: ambil(r, "sakit"),
+      izin: ambil(r, "izin"),
+      alpa: ambil(r, "alpa"),
+      tb: ambil(r, "tb"),
+      bb: ambil(r, "bb"),
+      ekskul: ambil(r, "ekskul"),
+      nilaiEkskul: ambil(r, "nilaiEkskul"),
+      ketEkskul: ambil(r, "ketEkskul")
+    }));
+
+    if (!data.some(d => d.nis)) {
+      notifError("Kolom NIS tidak ditemukan atau kosong. Gunakan template dari tombol Unduh Template.");
+      return;
+    }
+
+    notifConfirm("Unggah " + data.filter(d => d.nis).length + " baris absensi untuk kelas " + kelas + "?")
+      .then(result => {
+        if (!result.isConfirmed) return;
+
+        notifLoading("Mengunggah absensi...");
+
+        google.script.run
+          .withSuccessHandler(res => {
+            closeLoading();
+            input.value = "";
+
+            const ringkas = (res.diperbarui || 0) + " diperbarui, " + (res.baru || 0) + " baru.";
+            if (res.ditolak && res.ditolak.length) {
+              notifWarning(
+                ringkas + " " + res.ditolak.length + " baris ditolak:\n" +
+                res.ditolak.slice(0, 8).join("\n") +
+                (res.ditolak.length > 8 ? "\n..." : "")
+              );
+            } else {
+              notifSukses("Absensi berhasil diunggah: " + ringkas);
+            }
+
+            loadAbsensi();
+          })
+          .withFailureHandler(err => {
+            closeLoading();
+            notifError(err.message || err);
+          })
+          .uploadAbsensi(localStorage.getItem("userId") || "", kelas, data);
+      });
+  };
+
+  reader.onerror = () => notifError("Gagal membaca file.");
+  reader.readAsArrayBuffer(file);
+}
+
     function simpanAbsensi(nis, nama, kelas, btn) {
       const data = {
         nis,
@@ -1539,7 +1730,7 @@ function renderTabelAbsensiPerHalaman() {
           closeLoading();
           notifError("Gagal simpan: " + (err.message || err));
         })
-        .saveAbsensi(data);
+        .saveAbsensi(data, localStorage.getItem("userId") || "");
     }
 
     // 🚀 Otentikasi Manual
