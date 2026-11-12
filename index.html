@@ -1530,6 +1530,49 @@ function renderTabelAbsensiPerHalaman() {
 }
 
 // =====================================================
+// PAGINASI TABEL ABSENSI
+// =====================================================
+// Simpan dulu isian di halaman yang sedang tampil ke cache,
+// supaya yang sudah diketik (belum disimpan) tidak hilang saat pindah halaman.
+function simpanIsianAbsensiKeCache_() {
+  const ambil = id => document.getElementById(id);
+
+  dataAbsensiLengkap.forEach(s => {
+    const sakit = ambil("sakit-" + s.nis);
+    if (!sakit) return; // baris ini tidak sedang tampil
+
+    s.sakit = sakit.value;
+    s.izin = ambil("izin-" + s.nis)?.value ?? s.izin;
+    s.alpa = ambil("alpa-" + s.nis)?.value ?? s.alpa;
+    s.tb = ambil("tb-" + s.nis)?.value ?? s.tb;
+    s.bb = ambil("bb-" + s.nis)?.value ?? s.bb;
+    s.ekskul = ambil("ekskul-" + s.nis)?.value ?? s.ekskul;
+    s.nilaiEkskul = ambil("nilaiEkskul-" + s.nis)?.value ?? s.nilaiEkskul;
+    s.ketEkskul = ambil("ket-" + s.nis)?.value ?? s.ketEkskul;
+  });
+}
+
+function absensiPindahHalaman_(halamanBaru) {
+  const totalPages = Math.max(1, Math.ceil(dataAbsensiLengkap.length / absensiRowsPerPage));
+  if (halamanBaru < 1 || halamanBaru > totalPages) return;
+
+  simpanIsianAbsensiKeCache_();
+  absensiCurrentPage = halamanBaru;
+  renderTabelAbsensiPerHalaman();
+
+  document.getElementById("tabelAbsensi")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function absensiPrevPage() {
+  absensiPindahHalaman_(absensiCurrentPage - 1);
+}
+
+function absensiNextPage() {
+  absensiPindahHalaman_(absensiCurrentPage + 1);
+}
+
+// =====================================================
 // TEMPLATE & UNGGAH ABSENSI (EXCEL)
 // =====================================================
 const KOLOM_ABSENSI_ = [
