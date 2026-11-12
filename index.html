@@ -695,7 +695,9 @@
 
     <h2 class="text-lg font-bold mb-2">📊 Tujuan Pembelajaran</h2>
 
-    <div class="flex justify-end mb-2">
+    <p id="tpExcelHint" class="text-xs text-gray-500 mb-1 hidden"></p>
+
+    <div id="tpExcelBar" class="flex justify-end mb-2">
       
       <div class="mb-3 flex items-center gap-2">
         <input type="file" id="uploadTPFile" accept=".xlsx,.xls"
@@ -4221,7 +4223,27 @@ function simpanAppInfo() {
     });
 }
 
+function setupTPExcelUI() {
+  const role = (localStorage.getItem("roleUser") || "").trim().toLowerCase();
+  const bar = document.getElementById("tpExcelBar");
+  const hint = document.getElementById("tpExcelHint");
+
+  if (!bar || !hint) return;
+
+  const boleh = ["admin", "superadmin", "guru"].includes(role);
+  bar.classList.toggle("hidden", !boleh);
+
+  if (role === "guru") {
+    hint.textContent = "Unggah/unduh Excel TP hanya berlaku untuk mapel & kelas Anda.";
+    hint.classList.remove("hidden");
+  } else {
+    hint.classList.add("hidden");
+  }
+}
+
 function loadTP() {
+
+  setupTPExcelUI();
 
   const tbody = document.getElementById("tabelTP");
 
@@ -4832,6 +4854,9 @@ function toggleUserId() {
 
 function downloadTPExcel() {
 
+  const idUser = localStorage.getItem("userId") || "";
+  const roleUser = (localStorage.getItem("roleUser") || "").trim().toLowerCase();
+
   notifLoading("Menyiapkan file Excel...");
 
   google.script.run
@@ -4847,7 +4872,7 @@ function downloadTPExcel() {
       link.href = "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + base64;
 
       // 🔥 SIMPAN DI SINI
-      link.download = `TP_${new Date().toISOString().slice(0,10)}.xlsx`;
+      link.download = `TP_${roleUser === "guru" ? "Saya" : "Semua"}_${new Date().toISOString().slice(0,10)}.xlsx`;
 
       link.click();
 
@@ -4857,7 +4882,7 @@ function downloadTPExcel() {
       closeLoading();
       notifError("Gagal download: " + (err.message || err));
     })
-    .exportTPExcel();
+    .exportTPExcel(idUser);
 }
 
 function uploadTPExcel() {
@@ -4868,7 +4893,14 @@ function uploadTPExcel() {
     return;
   }
 
-  notifConfirm("Upload data TP ke sistem?")
+  const idUser = localStorage.getItem("userId") || "";
+  const roleUser = (localStorage.getItem("roleUser") || "").trim().toLowerCase();
+
+  const pesanKonfirmasi = roleUser === "guru"
+    ? "Upload TP? Hanya baris mapel/kelas Anda yang akan diperbarui."
+    : "Upload TP? Seluruh data TP yang ada akan DITIMPA oleh isi file ini.";
+
+  notifConfirm(pesanKonfirmasi)
     .then(result => {
       if (!result.isConfirmed) return;
 
@@ -4919,7 +4951,7 @@ function uploadTPExcel() {
             closeLoading();
             notifError("Gagal upload: " + (err.message || err));
           })
-          .importTPExcel(jsonData);
+          .importTPExcel(idUser, jsonData);
       };
 
       reader.readAsArrayBuffer(file);
