@@ -133,6 +133,14 @@
     }
     .topbar-burger:hover { background: rgba(255, 255, 255, .14); }
     .topbar-burger svg, .sb-user-name svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* logo + judul di kiri, tombol sidebar tepat di sebelah kanannya */
+    .topbar-left { display: flex; align-items: center; gap: 10px; flex: none; min-width: 0; }
+    .topbar-left .topbar-burger { margin-left: 4px; }
+    @media (min-width: 1024px) {
+      /* lebar blok = lebar sidebar, sehingga tombol berada di ujung kanan sidebar */
+      .topbar-left { width: calc(var(--nav-w) - 16px); }
+      .topbar-left .topbar-burger { margin-left: auto; }
+    }
     .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; }
     .topbar-logo { box-sizing: border-box; width: 36px; height: 36px; flex: none; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
     /* nama aplikasi di atas, subjudul tepat di bawahnya; tinggi blok = tinggi logo */
@@ -321,6 +329,8 @@
        ===================================================================== */
     @media (max-width: 767px) {
       .topbar { gap: 8px; }
+      .topbar-left { gap: 6px; }
+      .topbar-left .topbar-burger { margin-left: 0; }
       .topbar-brand { gap: 7px; }
       .topbar-logo { width: 32px; height: 32px; }
       .topbar-text { height: 32px; }
@@ -608,15 +618,17 @@
 
     <!-- ===== TOPBAR ===== -->
     <header class="topbar">
-      <button type="button" id="btnMenu" class="topbar-burger" aria-label="Buka atau tutup menu" aria-controls="sidebarMenu" aria-expanded="false" onclick="toggleSidebar()">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-      <div class="topbar-brand">
-        <img id="logoSekolah" class="topbar-logo" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo Rakumaku" />
-        <div class="topbar-text">
-          <span class="topbar-title">Aplikasi Rakumaku</span>
-          <span class="topbar-sub">Rapor Kurikulum Merdeka Kuningan</span>
+      <div class="topbar-left">
+        <div class="topbar-brand">
+          <img id="logoSekolah" class="topbar-logo" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo Rakumaku" />
+          <div class="topbar-text">
+            <span class="topbar-title">Aplikasi Rakumaku</span>
+            <span class="topbar-sub">Rapor Kurikulum Merdeka Kuningan</span>
+          </div>
         </div>
+        <button type="button" id="btnMenu" class="topbar-burger" aria-label="Buka atau tutup menu" aria-controls="sidebarMenu" aria-expanded="false" onclick="toggleSidebar()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
       </div>
       <div class="topbar-info">
         <span id="namaSekolah" class="topbar-school">Nama Sekolah</span>
