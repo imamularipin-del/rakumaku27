@@ -134,10 +134,11 @@
     .topbar-burger:hover { background: rgba(255, 255, 255, .14); }
     .topbar-burger svg, .sb-user-name svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; }
-    .topbar-logo { width: 34px; height: 34px; flex: none; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
-    .topbar-title { font-size: 20px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
-    .topbar-sub { font-size: 14px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    @media (max-width: 1279px) { .topbar-sub { display: none; } }
+    .topbar-logo { box-sizing: border-box; width: 36px; height: 36px; flex: none; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+    /* nama aplikasi di atas, subjudul tepat di bawahnya; tinggi blok = tinggi logo */
+    .topbar-text { height: 36px; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+    .topbar-title { font-size: 19px; line-height: 20px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
+    .topbar-sub { font-size: 12px; line-height: 14px; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* nama sekolah dan periode satu baris, di sisi kanan */
     .topbar-info { flex: 1 1 0; min-width: 0; margin-left: 12px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
@@ -321,8 +322,10 @@
     @media (max-width: 767px) {
       .topbar { gap: 8px; }
       .topbar-brand { gap: 7px; }
-      .topbar-logo { width: 30px; height: 30px; }
-      .topbar-title { font-size: 17px; }
+      .topbar-logo { width: 32px; height: 32px; }
+      .topbar-text { height: 32px; }
+      .topbar-title { font-size: 16px; line-height: 18px; }
+      .topbar-sub { font-size: 10.5px; line-height: 12px; }
       .topbar-info { flex-direction: column; align-items: flex-end; justify-content: center; gap: 1px; margin-left: 4px; }
       .topbar-school {
         max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: right;
@@ -610,8 +613,10 @@
       </button>
       <div class="topbar-brand">
         <img id="logoSekolah" class="topbar-logo" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo Rakumaku" />
-        <span class="topbar-title">Rakumaku</span>
-        <span class="topbar-sub">Rapor Sekolah Kuningan</span>
+        <div class="topbar-text">
+          <span class="topbar-title">Rakumaku</span>
+          <span class="topbar-sub">Rapor Sekolah Kuningan</span>
+        </div>
       </div>
       <div class="topbar-info">
         <span id="namaSekolah" class="topbar-school">Nama Sekolah</span>
