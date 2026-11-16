@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f6fae" />
   <title>Rakumaku</title>
   <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" />
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" />
@@ -64,6 +65,309 @@
     .animate-slideOutLeft { animation: slideOutLeft 0.4s forwards; }
     .animate-slideInLeft { animation: slideInLeft 0.4s forwards; }
     .animate-slideOutRight { animation: slideOutRight 0.4s forwards; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style id="theme-dapodik">
+    /* =====================================================================
+       TEMA DAPODIK — token warna
+       ===================================================================== */
+    :root {
+      --blue: #1f6fae;
+      --blue-d: #15578c;
+      --blue-l: #e4f0fa;
+      --nav: #1c2a39;
+      --nav-d: #152130;
+      --nav-txt: #a9b8c8;
+      --nav-hover: #25374a;
+      --nav-on: #3aa3f2;
+      --bg: #ecf0f4;
+      --line: #d5dde6;
+      --ink: #25364a;
+      --muted: #5d6e80;
+      --topbar-h: 52px;
+      --nav-w: 252px;
+    }
+
+    body.bg-gray-100 {
+      font-family: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      -webkit-text-size-adjust: 100%;
+    }
+    /* halaman login: latar biru seperti Dapodik */
+    body.bg-gray-100:has(#app.hidden) {
+      background: linear-gradient(160deg, #1f6fae 0%, #15578c 55%, #1c2a39 100%);
+    }
+    #login-box, #register-box {
+      border-radius: 4px;
+      border-top: 4px solid var(--blue);
+      margin: 16px;
+      max-width: min(28rem, calc(100% - 2rem));
+    }
+    #login-box .bg-blue-600, #register-box .bg-blue-600 { background-color: var(--blue); }
+    #login-box .hover\:bg-blue-700:hover, #register-box .hover\:bg-blue-700:hover { background-color: var(--blue-d); }
+    #login-box input, #login-box select, #register-box input, #register-box select { font-size: 16px; }
+
+    #app { width: 100%; align-self: stretch; }
+
+    /* tab-content & tbody yang id-nya berawalan "tab" ikut kena reset class lama (bg-gray-300) */
+    #app [id^="tab"]:not(button) { background-color: transparent; }
+
+    /* =====================================================================
+       TOPBAR
+       ===================================================================== */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; align-items: center; gap: 10px;
+      height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+      padding: env(safe-area-inset-top, 0px) 12px 0;
+      background: var(--blue); color: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+    }
+    .topbar-burger {
+      width: 40px; height: 40px; flex: none;
+      display: grid; place-items: center;
+      border-radius: 4px; color: #fff; background: transparent;
+    }
+    .topbar-burger:hover { background: rgba(255, 255, 255, .14); }
+    .topbar-burger svg, .sb-user-name svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .topbar-brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 0 1 auto; }
+    .topbar-title { font-size: 20px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
+    .topbar-sub { font-size: 14px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-periode {
+      margin-left: auto; flex: none;
+      font-size: 13px; font-weight: 600;
+      padding: 5px 10px; border-radius: 3px;
+      background: rgba(255, 255, 255, .16);
+      white-space: nowrap;
+    }
+
+    /* =====================================================================
+       SHELL + SIDEBAR KIRI
+       ===================================================================== */
+    .shell { display: flex; align-items: flex-start; min-height: calc(100vh - var(--topbar-h)); }
+
+    .sidebar {
+      flex: none; width: var(--nav-w);
+      position: sticky; top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+      height: calc(100vh - var(--topbar-h) - env(safe-area-inset-top, 0px));
+      height: calc(100dvh - var(--topbar-h) - env(safe-area-inset-top, 0px));
+      overflow-y: auto; overscroll-behavior: contain;
+      display: flex; flex-direction: column;
+      background: var(--nav); color: var(--nav-txt);
+    }
+    .sidebar-overlay { display: none; }
+
+    .sb-school {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: var(--nav-d);
+      border-bottom: 1px solid rgba(255, 255, 255, .07);
+    }
+    .sb-school img { width: 42px; height: 42px; flex: none; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+    .sb-school-name {
+      color: #fff; font-weight: 600; font-size: 15px; line-height: 1.25;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .sb-user { margin: 12px; padding: 10px; border-radius: 3px; background: rgba(255, 255, 255, .06); font-size: 14px; }
+    .sb-user-name { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #fff; font-weight: 600; word-break: break-word; }
+    .sb-user-name svg { width: 18px; height: 18px; flex: none; color: var(--nav-txt); }
+    .sb-select { width: 100%; height: 38px; margin-bottom: 8px; padding: 0 8px; border: 0; border-radius: 3px; background: #fff; color: var(--ink); font-size: 14px; }
+    .sb-actions { display: flex; gap: 8px; }
+    .sb-btn { flex: 1; min-height: 38px; padding: 0 10px; border-radius: 3px; color: #fff; font-size: 14px; font-weight: 600; }
+    .sb-btn-sync { background: var(--blue); }
+    .sb-btn-sync:hover { background: #2a82c8; }
+    .sb-btn-out { background: #b83b30; }
+    .sb-btn-out:hover { background: #cb4a3e; }
+
+    .sb-nav { flex: 1; padding: 6px 0 24px; }
+    #sidebarMenu .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; min-height: 46px; padding: 0 16px;
+      text-align: left; font-size: 15px;
+      color: var(--nav-txt); background: transparent;
+      border: 0; border-left: 3px solid transparent; border-radius: 0;
+      cursor: pointer;
+    }
+    #sidebarMenu .nav-item.hidden { display: none; }
+    #sidebarMenu .nav-item:hover { background: var(--nav-hover); color: #fff; }
+    #sidebarMenu .nav-item.bg-blue-600 { background: var(--nav-hover); color: #fff; border-left-color: var(--nav-on); font-weight: 600; }
+    #sidebarMenu .nav-item:focus-visible, .topbar-burger:focus-visible, .sb-btn:focus-visible { outline: 2px solid #8fd0ff; outline-offset: -2px; }
+    .nav-item svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    @media (min-width: 1024px) {
+      body.nav-collapsed .sidebar { display: none; }
+    }
+    @media (max-width: 1023px) {
+      .sidebar {
+        position: fixed; z-index: 45; top: 0; left: 0; bottom: 0;
+        width: min(84vw, 310px); height: auto;
+        padding-top: env(safe-area-inset-top, 0px);
+        transform: translateX(-102%); visibility: hidden;
+        transition: transform .22s ease, visibility 0s linear .22s;
+      }
+      body.nav-open .sidebar {
+        transform: none; visibility: visible;
+        transition: transform .22s ease, visibility 0s;
+        box-shadow: 6px 0 24px rgba(0, 0, 0, .35);
+      }
+      .sidebar-overlay { position: fixed; inset: 0; z-index: 44; background: rgba(10, 20, 30, .55); }
+      body.nav-open .sidebar-overlay { display: block; }
+      body.nav-open { overflow: hidden; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sidebar, body.nav-open .sidebar { transition: none; }
+    }
+
+    /* =====================================================================
+       KONTEN
+       ===================================================================== */
+    .content { flex: 1; min-width: 0; padding: 16px; }
+    @media (min-width: 1024px) { .content { padding: 20px 24px 32px; } }
+
+    .crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 14px; color: var(--muted); }
+    .crumb strong { color: var(--ink); font-weight: 600; }
+
+    /* Beranda hanya tampil di halaman Beranda */
+    body:not([data-tab="beranda"]) #berandaWrap { display: none; }
+    #berandaWrap #uploadContainer { margin: 16px 0 0; }
+
+    .box, #berandaWrap aside {
+      background: #fff; border-top: 3px solid var(--blue); border-radius: 3px;
+      box-shadow: 0 1px 2px rgba(20, 40, 60, .14);
+    }
+    .box { padding: 16px 18px; }
+    .box-title { margin: 0 0 12px; font-size: 18px; font-weight: 600; color: var(--ink); }
+    .kv { display: grid; grid-template-columns: minmax(96px, max-content) 1fr; gap: 8px 18px; margin: 0; font-size: 15px; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; word-break: break-word; }
+
+    /* judul halaman di tiap tab */
+    #app main section > h2 {
+      padding-left: 10px; border-left: 4px solid var(--blue);
+      font-size: 19px; line-height: 1.3; font-weight: 600; color: var(--ink);
+    }
+
+    /* kotak-kotak bergaya AdminLTE */
+    #app main section > .bg-white,
+    #app main section > .overflow-x-auto {
+      border-top: 3px solid var(--blue);
+      box-shadow: 0 1px 2px rgba(20, 40, 60, .14);
+    }
+    #app main :is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl) { border-radius: 3px; }
+
+    /* tombol biru & hover mengikuti warna tema */
+    #app main .bg-blue-600 { background-color: var(--blue); }
+    #app main .hover\:bg-blue-700:hover { background-color: var(--blue-d); }
+
+    /* formulir */
+    #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+      border-color: #c3cfdb; border-radius: 3px; background-color: #fff;
+    }
+    #app main :is(input, select, textarea):focus { outline: 2px solid rgba(31, 111, 174, .35); outline-offset: 0; border-color: var(--blue); }
+    #app main input:disabled { background-color: #f0f3f7; color: #4a5b6c; }
+
+    /* tabel */
+    #app main thead, #app main thead.bg-blue-600 { background-color: #e6edf4; color: #2a3f55; }
+    #app main thead th { font-weight: 600; white-space: nowrap; border-bottom: 2px solid #c6d3e0; }
+    table.tbl-cards { min-width: 1200px; }
+    .btn-lbl { display: none; }
+    .mobile-hint { display: none; }
+
+    /* modal selalu di atas topbar/sidebar */
+    #modalTP, #modalSiswa, #modalEditUser, #confirmModal { z-index: 100; }
+
+    /* =====================================================================
+       BAR AKSI CEPAT (HP, tab Nilai)
+       ===================================================================== */
+    .msb {
+      display: none;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+      gap: 10px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+      background: #fff; border-top: 1px solid var(--line);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, .1);
+    }
+    .msb button { flex: 1; height: 48px; border-radius: 4px; color: #fff; font-size: 15px; font-weight: 600; }
+    .msb-edit { background: #d98a0b; }
+    .msb-save { background: #2a8a4a; }
+
+    /* =====================================================================
+       MOBILE (≤ 767px): input nilai & absensi jadi kartu per siswa
+       ===================================================================== */
+    @media (max-width: 767px) {
+      .topbar-sub { display: none; }
+      .topbar-title { font-size: 19px; }
+      .topbar-periode { font-size: 12px; padding: 4px 8px; }
+      .topbar-periode .sep { font-size: 0; }
+      .topbar-periode .sep::before { content: " · Smt "; font-size: 12px; }
+      .box { padding: 14px; }
+      .kv { grid-template-columns: 1fr; gap: 2px; }
+      .kv dd { margin-bottom: 8px; }
+      .kv dt { font-size: 13px; }
+
+      #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) { min-height: 44px; font-size: 16px; }
+      #app main button { min-height: 40px; }
+
+      /* filter unggah / unduh: susun ke bawah */
+      #uploadNilaiSection, #downloadNilaiSection { flex-wrap: wrap; width: 100%; }
+      #uploadNilaiSection select, #downloadNilaiSection select { flex: 1 1 40%; }
+      #excelUpload { width: 100%; }
+
+      .mobile-hint { display: block; padding: 8px 12px; font-size: 14px; color: var(--blue-d); background: var(--blue-l); border-radius: 3px; }
+
+      body[data-tab="nilai"] .msb { display: flex; }
+      body[data-tab="nilai"] .content { padding-bottom: 88px; }
+
+      #app main section > .wrap-cards { overflow: visible; background: transparent; border-top: 0; box-shadow: none; }
+
+      #app .tbl-cards { min-width: 0; width: 100%; }
+      #app .tbl-cards, #app .tbl-cards tbody { display: block; }
+      #app .tbl-cards thead { display: none; }
+      #app .tbl-cards tbody tr {
+        display: flex; flex-wrap: wrap; align-items: flex-end;
+        margin: 0 0 12px; padding: 12px 8px 10px;
+        border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(20, 40, 60, .1);
+      }
+      :where(#app .tbl-cards tbody tr) { background: #fff; }
+      #app .tbl-cards td { display: block; box-sizing: border-box; min-width: 0; flex: 1 0 100%; padding: 3px; border: 0; text-align: left; }
+
+      #app .tbl-cards td.td-nama { order: 1; padding-bottom: 2px; font-size: 17px; font-weight: 700; color: var(--ink); }
+      #app .tbl-cards td.td-meta { order: 2; flex: 0 0 auto; padding: 0 14px 8px 3px; font-size: 13px; color: var(--muted); }
+      #app .tbl-cards td.td-meta::before { content: attr(data-label) " "; font-weight: 600; }
+
+      #app .tbl-cards td.td-tp { order: 3; flex: 0 0 20%; }
+      #app .tbl-cards td.td-field { order: 3; flex: 0 0 33.333%; }
+      #app .tbl-cards td.td-wide { order: 4; flex: 1 0 100%; }
+      #app .tbl-cards td.td-tp::before,
+      #app .tbl-cards td.td-field::before,
+      #app .tbl-cards td.td-wide::before {
+        content: attr(data-label); display: block; margin-bottom: 3px;
+        font-size: 12px; color: var(--muted); text-align: center;
+      }
+      #app .tbl-cards td.td-wide::before { text-align: left; }
+
+      #app .tbl-cards td input {
+        box-sizing: border-box; min-width: 0;
+        width: 100%; height: 46px; padding: 0 4px;
+        font-size: 16px; text-align: center;
+        border: 1px solid #b4c2d0; border-radius: 4px; background: #fff;
+      }
+      #app .tbl-cards td.td-wide input { padding: 0 10px; text-align: left; }
+      #app .tbl-cards td input:disabled {
+        pointer-events: none; opacity: 1;
+        background: #eef2f6; color: #4a5b6c; -webkit-text-fill-color: #4a5b6c;
+      }
+
+      #app .tbl-cards td.td-aksi { order: 9; display: flex; gap: 8px; margin-top: 6px; padding-top: 10px; border-top: 1px dashed var(--line); }
+      #app .tbl-cards td.td-aksi button { flex: 1; min-height: 46px; padding: 0 6px; border-radius: 4px; font-size: 15px; font-weight: 600; }
+      #app .tbl-cards td.td-aksi > * { margin-left: 0; }
+      #app .tbl-cards .btn-lbl { display: inline; margin-left: 6px; }
+    }
+
   </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -219,57 +523,74 @@
   </div>
 
   <!-- App Content -->
-  <div id="app" class="hidden p-4 space-y-6">
+  <div id="app" class="hidden">
 
-    <!-- Header Sekolah + User -->
-    <header class="bg-white shadow rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between border border-gray-100">
-      <div class="flex items-center gap-4">
-        <img id="logoSekolah" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo Sekolah" class="w-20 h-20 object-cover rounded border" />
-        <div>
-          <h1 id="namaSekolah" class="text-2xl font-bold text-gray-800">Nama Sekolah</h1>
-          <p id="alamatSekolah" class="text-sm text-gray-600">Alamat Sekolah</p>
-          <p id="emailSekolah" class="text-sm text-gray-600">Email • Web</p>
-        </div>
+    <!-- ===== TOPBAR ===== -->
+    <header class="topbar">
+      <button type="button" id="btnMenu" class="topbar-burger" aria-label="Buka atau tutup menu" aria-controls="sidebarMenu" aria-expanded="false" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="topbar-brand">
+        <span class="topbar-title">Rakumaku</span>
+        <span class="topbar-sub">Rapor Sekolah Kuningan</span>
       </div>
-      
-      <!-- Info Sekolah (Tengah) -->
-      <div class="text-sm text-gray-700 space-y-1 mt-4 md:mt-0">
-        <div class="grid grid-cols-[120px_10px_1fr]">
-          <div><strong>Kepala Sekolah</strong></div>
-          <div>:</div>
-          <div id="kepalaSekolah">-</div>
-        </div>
-        <div class="grid grid-cols-[120px_10px_1fr]">
-          <div><strong>NIP</strong></div>
-          <div>:</div>
-          <div id="nipKepalaSekolah">-</div>
-        </div>
-        <div class="grid grid-cols-[120px_10px_1fr]">
-          <div><strong>Tahun Ajaran</strong></div>
-          <div>:</div>
-          <div>
-            <span id="tahunAjaran">-</span><strong> — Semester </strong><span id="semester">-</span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- User Info (Kanan) -->
-      <div id="userInfo" class="mt-4 md:mt-0 bg-gray-50 border border-gray-200 px-4 py-3 rounded-lg text-sm shadow-sm hidden">
-        <p class="font-semibold text-gray-700 mb-2">👤 <span id="displayUser"></span></p>
-        <select id="syncMapelSelect" class="border px-2 py-1 rounded w-full mb-2 hidden"></select>
-        <div class="flex gap-2">
-          <button id="btnSinkronisasi" onclick="jalankanSinkronisasi()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors hidden">
-            Sinkronisasi
-          </button>
-          <button onclick="logout()" class="bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700 transition-colors w-full">
-            Logout
-          </button>
-        </div>
+      <div class="topbar-periode">
+        <span id="tahunAjaran">-</span><span class="sep"> — Semester </span><span id="semester">-</span>
       </div>
     </header>
 
-    <!-- Upload Section Container (Sudah Presisi dengan Header) -->
-    <div id="uploadContainer" class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 mb-6 items-stretch">
+    <div class="shell">
+      <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+      <!-- ===== SIDEBAR KIRI ===== -->
+      <aside id="sidebarMenu" class="sidebar" aria-label="Menu utama">
+        <div class="sb-school">
+          <img id="logoSekolah" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo sekolah" />
+          <div id="namaSekolah" class="sb-school-name">Nama Sekolah</div>
+        </div>
+
+        <div id="userInfo" class="sb-user hidden">
+          <p class="sb-user-name"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span id="displayUser"></span></p>
+          <select id="syncMapelSelect" class="sb-select hidden" aria-label="Mapel sinkronisasi"></select>
+          <div class="sb-actions">
+            <button type="button" id="btnSinkronisasi" onclick="jalankanSinkronisasi()" class="sb-btn sb-btn-sync hidden">Sinkronisasi</button>
+            <button type="button" onclick="logout()" class="sb-btn sb-btn-out">Keluar</button>
+          </div>
+        </div>
+
+        <nav class="sb-nav" id="tabMenu">
+        <button type="button" onclick="showTab('beranda')" id="tabBeranda" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>Beranda</span></button>
+        <button type="button" onclick="showTab('nilai')" id="tabNilai" class="nav-item bg-blue-600 text-white"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M8 9h7M8 13h7"/></svg><span>Nilai</span></button>
+        <button type="button" onclick="showTab('absensi')" id="tabAbsensi" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Absensi</span></button>
+        <button type="button" onclick="showTab('tp')" id="tabTp" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Tujuan Pembelajaran</span></button>
+        <button type="button" onclick="showTab('pesanmapel')" id="tabPesanMapel" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span>Pesan Mapel</span></button>
+        <button type="button" onclick="showTab('nilaisiswa')" id="tabNilaiSaya" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Nilai Saya</span></button>
+        <button type="button" onclick="showTab('datasiswa')" id="tabDatasiswa" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/></svg><span>Data Siswa</span></button>
+        <button type="button" onclick="showTab('mapel')" id="tabMapel" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg><span>Mata Pelajaran</span></button>
+        <button type="button" onclick="showTab('aturanmapel')" id="tabAturanMapel" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Aturan Mapel</span></button>
+        <button type="button" onclick="showTab('identitas')" id="tabIdentitas" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6M3 21h18"/></svg><span>Identitas Sekolah</span></button>
+        <button type="button" onclick="showTab('users')" id="tabUsers" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.8-5.5 6.5-5.5s6.5 1.9 6.5 5.5"/><path d="M16 4.7a3.5 3.5 0 010 6.6M18.5 14.8c1.8.8 3 2.4 3 5.2"/></svg><span>Pengguna</span></button>
+        <button type="button" onclick="showTab('appinfo')" id="tabAppInfo" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg><span>Info Aplikasi</span></button>
+        </nav>
+      </aside>
+
+      <!-- ===== KONTEN ===== -->
+      <main id="mainContent" class="content">
+        <div class="crumb" aria-label="Lokasi halaman"><span>Beranda</span><span class="crumb-sep" aria-hidden="true">/</span><strong id="crumbCurrent">Nilai</strong></div>
+
+    <!-- ===== BERANDA ===== -->
+    <div id="berandaWrap">
+      <div class="box profile">
+        <h2 class="box-title">Profil Sekolah</h2>
+        <dl class="kv">
+          <dt>Alamat</dt><dd id="alamatSekolah">Alamat Sekolah</dd>
+          <dt>Email &amp; web</dt><dd id="emailSekolah">Email • Web</dd>
+          <dt>Kepala sekolah</dt><dd id="kepalaSekolah">-</dd>
+          <dt>NIP</dt><dd id="nipKepalaSekolah">-</dd>
+        </dl>
+      </div>
+
+<div id="uploadContainer" class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 mb-6 items-stretch">
 
       <!-- Sidebar Info (Kiri) -->
       <aside id="sidebarInfo" class="lg:col-span-4 bg-white shadow-lg rounded-xl p-6 flex flex-col justify-between border border-gray-100">
@@ -354,6 +675,8 @@
         </div>
       </aside>
     </div>
+    </div><!-- /berandaWrap -->
+
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -369,64 +692,6 @@
       <div id="rollingText">Memulai sinkronisasi...</div>
       <div id="progressText" class="text-xl font-mono">0%</div>
       <button id="btnCancel" class="mt-6 px-6 py-2 bg-red-600 rounded hover:bg-red-700">Batal</button>
-    </div>
-
-    <!-- TAB MENU -->
-    <div class="flex gap-2 mb-4">
-      <button onclick="showTab('nilai')" id="tabNilai"
-        class="px-4 py-2 rounded bg-blue-600 text-white transition">
-        📘 Nilai
-      </button>
-
-      <button onclick="showTab('absensi')" id="tabAbsensi"
-        class="px-4 py-2 rounded bg-gray-300 transition">
-        📅 Absensi
-      </button>
-
-      <button onclick="showTab('pesanmapel')" id="tabPesanMapel"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        📨 Pesan Mapel
-      </button>
-
-      <button onclick="showTab('tp')" id="tabTp"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden"> 📊 TP
-      </button>
-
-      <button onclick="showTab('datasiswa')" id="tabDatasiswa"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        🎓 Data Siswa
-      </button>
-
-      <button onclick="showTab('identitas')" id="tabIdentitas"
-        class="px-4 py-2 rounded bg-gray-300 transition">
-        🏫 Identitas
-      </button>
-
-      <button onclick="showTab('users')" id="tabUsers"
-        class="px-4 py-2 rounded bg-gray-300 transition">
-        👥 Users
-      </button>
-
-      <button onclick="showTab('appinfo')" id="tabAppInfo"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        ⚙️ App Info
-      </button>
-
-      <button onclick="showTab('mapel')" id="tabMapel"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        📚 Mapel
-      </button>
-
-      <button onclick="showTab('aturanmapel')" id="tabAturanMapel"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        📐 Aturan Mapel
-      </button>
-
-      <button onclick="showTab('nilaisiswa')"
-        id="tabNilaiSaya"
-        class="px-4 py-2 rounded bg-gray-300 transition hidden">
-        📊 Nilai Saya
-      </button>
     </div>
 
     <!-- ================= TAB NILAI ================= -->
@@ -517,8 +782,9 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-[1200px] w-full table-auto text-sm">
+      <p class="mobile-hint">Ketuk kotak nilai untuk mengubah, lalu tekan Simpan di kartu siswa atau di bar bawah.</p>
+      <div class="overflow-x-auto bg-white rounded-lg shadow wrap-cards">
+        <table class="tbl-cards w-full table-auto text-sm">
           <thead class="bg-gray-200 text-gray-700">
             <tr>
               <th class="px-3 py-2">NIS</th>
@@ -620,8 +886,9 @@
       </div>
 
       <!-- Tabel -->
-      <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-[1200px] w-full table-auto text-sm">
+      <p class="mobile-hint">Ketuk kotak nilai untuk mengubah, lalu tekan Simpan di kartu siswa atau di bar bawah.</p>
+      <div class="overflow-x-auto bg-white rounded-lg shadow wrap-cards">
+        <table class="tbl-cards w-full table-auto text-sm">
           <thead class="bg-gray-200 text-gray-700">
             <tr>
               <th class="px-3 py-2">NIS</th>
@@ -1332,6 +1599,14 @@
         💾 Simpan
       </button>
     </section>
+      </main>
+    </div><!-- /shell -->
+
+    <!-- Bar aksi cepat (hanya tampil di HP, tab Nilai) -->
+    <div id="mobileSaveBar" class="msb">
+      <button type="button" onclick="editSemuaNilai()" class="msb-edit">✏️ Edit semua</button>
+      <button type="button" onclick="simpanSemuaNilai()" class="msb-save">💾 Simpan semua</button>
+    </div>
   </div>
 
   <!-- Script -->
@@ -1490,25 +1765,25 @@ function renderTabelAbsensiPerHalaman() {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td class="border px-2 py-1">${s.nis}</td>
-      <td class="border px-2 py-1">${s.nama}</td>
-      <td class="border px-2 py-1">${s.kelas}</td>
+      <td class="border px-2 py-1 td-meta" data-label="NIS">${s.nis}</td>
+      <td class="border px-2 py-1 td-nama" data-label="Nama">${s.nama}</td>
+      <td class="border px-2 py-1 td-meta" data-label="Kelas">${s.kelas}</td>
 
-      <td><input type="number" min="0" id="sakit-${s.nis}" value="${s.sakit || 0}" class="w-16 border rounded text-center"></td>
-      <td><input type="number" min="0" id="izin-${s.nis}" value="${s.izin || 0}" class="w-16 border rounded text-center"></td>
-      <td><input type="number" min="0" id="alpa-${s.nis}" value="${s.alpa || 0}" class="w-16 border rounded text-center"></td>
+      <td class="td-field" data-label="Sakit"><input type="number" inputmode="numeric" enterkeyhint="next" min="0" id="sakit-${s.nis}" value="${s.sakit || 0}" class="w-16 border rounded text-center"></td>
+      <td class="td-field" data-label="Izin"><input type="number" inputmode="numeric" enterkeyhint="next" min="0" id="izin-${s.nis}" value="${s.izin || 0}" class="w-16 border rounded text-center"></td>
+      <td class="td-field" data-label="Alpa"><input type="number" inputmode="numeric" enterkeyhint="next" min="0" id="alpa-${s.nis}" value="${s.alpa || 0}" class="w-16 border rounded text-center"></td>
 
-      <td><input type="number" id="tb-${s.nis}" value="${s.tb || ''}" class="w-16 border rounded text-center"></td>
-      <td><input type="number" id="bb-${s.nis}" value="${s.bb || ''}" class="w-16 border rounded text-center"></td>
+      <td class="td-field" data-label="Tinggi"><input type="number" inputmode="numeric" enterkeyhint="next" id="tb-${s.nis}" value="${s.tb || ''}" class="w-16 border rounded text-center"></td>
+      <td class="td-field" data-label="Berat"><input type="number" inputmode="numeric" enterkeyhint="next" id="bb-${s.nis}" value="${s.bb || ''}" class="w-16 border rounded text-center"></td>
 
-      <td><input type="text" id="ekskul-${s.nis}" value="${s.ekskul || ''}" class="border rounded"></td>
-      <td><input type="text" id="nilaiEkskul-${s.nis}" value="${s.nilaiEkskul || ''}" class="border rounded w-20"></td>
-      <td><input type="text" id="ket-${s.nis}" value="${s.ketEkskul || ''}" class="border rounded"></td>
+      <td class="td-wide" data-label="Ekstrakurikuler"><input type="text" enterkeyhint="next" id="ekskul-${s.nis}" value="${s.ekskul || ''}" class="border rounded"></td>
+      <td class="td-field" data-label="Nilai ekskul"><input type="text" enterkeyhint="next" id="nilaiEkskul-${s.nis}" value="${s.nilaiEkskul || ''}" class="border rounded w-20"></td>
+      <td class="td-wide" data-label="Keterangan"><input type="text" enterkeyhint="done" id="ket-${s.nis}" value="${s.ketEkskul || ''}" class="border rounded"></td>
 
-      <td>
+      <td class="td-aksi">
         <button onclick="simpanAbsensi('${s.nis}','${s.nama}','${s.kelas}', this)"
           class="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-          💾
+          💾<span class="btn-lbl">Simpan</span>
         </button>
       </td>
     `;
@@ -2906,14 +3181,14 @@ function renderPaginasiNilai(mapel, hideCetak) {
     tr.setAttribute("data-index", indexAsli); // Mengikat indeks asli database ke elemen baris
 
     tr.innerHTML = `
-      <td class="border px-2 py-1">${siswa.nis}</td>
-      <td class="border px-2 py-1">${siswa.nama}</td>
-      <td class="border px-2 py-1">${siswa.kelas}</td>
-      <td class="border px-2 py-1">${mapel}</td>
+      <td class="border px-2 py-1 td-meta" data-label="NIS">${siswa.nis}</td>
+      <td class="border px-2 py-1 td-nama" data-label="Nama">${siswa.nama}</td>
+      <td class="border px-2 py-1 td-meta" data-label="Kelas">${siswa.kelas}</td>
+      <td class="border px-2 py-1 td-meta" data-label="Mapel">${mapel}</td>
 
       ${Array.from({ length: 10 }).map((_, i) => `
-        <td class="border px-2 py-1">
-          <input type="number" min="0" max="100" 
+        <td class="border px-2 py-1 td-tp" data-label="TP${i + 1}">
+          <input type="number" inputmode="numeric" enterkeyhint="next" min="0" max="100" 
             class="w-16 text-center border rounded focus:ring-2 focus:ring-blue-400" 
             id="tp${i + 1}-${siswa.nis}" 
             value="${siswa.tps ? siswa.tps[i] || '' : ''}" 
@@ -2921,21 +3196,21 @@ function renderPaginasiNilai(mapel, hideCetak) {
         </td>
       `).join("")}
 
-      <td class="border px-2 py-1 space-x-1">
+      <td class="border px-2 py-1 space-x-1 td-aksi">
         <button onclick="simpanNilai('${siswa.nis}', '${siswa.nama}', '${siswa.kelas}', '${mapel}')" 
           class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
-          💾
+          💾<span class="btn-lbl">Simpan</span>
         </button>
 
         <button onclick="editNilai('${siswa.nis}')" 
           class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">
-          ✏️
+          ✏️<span class="btn-lbl">Edit</span>
         </button>
 
         ${!hideCetak ? `
           <button onclick="cetakRapor('${siswa.nis}')" 
             class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
-            🖨️
+            🖨️<span class="btn-lbl">Cetak</span>
           </button>
         ` : ``}
       </td>
@@ -7015,5 +7290,132 @@ window.addEventListener('load', function() {
         </div>
       </div>
     </div>
- </body>
+  <script>
+/* =========================================================================
+   Tema Dapodik — perilaku tambahan (tidak mengubah logika aplikasi)
+   ========================================================================= */
+(function () {
+  var body = document.body;
+  var NAV_BTN = {
+    beranda: "tabBeranda", nilai: "tabNilai", absensi: "tabAbsensi", tp: "tabTp",
+    pesanmapel: "tabPesanMapel", nilaisiswa: "tabNilaiSaya", datasiswa: "tabDatasiswa",
+    mapel: "tabMapel", aturanmapel: "tabAturanMapel", identitas: "tabIdentitas",
+    users: "tabUsers", appinfo: "tabAppInfo"
+  };
+
+  function isDrawer() { return window.matchMedia("(max-width: 1023px)").matches; }
+  function isPhone() { return window.matchMedia("(max-width: 767px)").matches; }
+
+  function syncAria() {
+    var open = isDrawer() ? body.classList.contains("nav-open") : !body.classList.contains("nav-collapsed");
+    var b = document.getElementById("btnMenu");
+    if (b) b.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  /* ---------- Sidebar ---------- */
+  window.toggleSidebar = function () {
+    if (isDrawer()) body.classList.toggle("nav-open");
+    else body.classList.toggle("nav-collapsed");
+    syncAria();
+  };
+  window.closeSidebar = function () {
+    body.classList.remove("nav-open");
+    syncAria();
+  };
+
+  var side = document.getElementById("sidebarMenu");
+  if (side) {
+    side.addEventListener("click", function (e) {
+      if (e.target.closest(".nav-item") && isDrawer()) window.closeSidebar();
+    });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && body.classList.contains("nav-open")) window.closeSidebar();
+  });
+  window.addEventListener("resize", function () {
+    if (!isDrawer()) body.classList.remove("nav-open");
+    syncAria();
+  });
+  syncAria();
+
+  /* ---------- Beranda: bungkus showTab bawaan ---------- */
+  var originalShowTab = window.showTab;
+  if (typeof originalShowTab === "function") {
+    window.showTab = function (tab) {
+      var home = document.getElementById("tabBeranda");
+
+      if (tab === "beranda") {
+        try { localStorage.setItem("activeTab", "beranda"); } catch (e) {}
+        document.querySelectorAll('#app section[id^="tab-content-"]').forEach(function (s) { s.classList.add("hidden"); });
+        document.querySelectorAll("#sidebarMenu .nav-item").forEach(function (b) {
+          b.classList.remove("bg-blue-600", "text-white");
+          b.classList.add("bg-gray-300");
+        });
+        if (home) { home.classList.remove("bg-gray-300"); home.classList.add("bg-blue-600", "text-white"); }
+        body.setAttribute("data-tab", "beranda");
+        // grafik dibuat ulang saat kontainernya terlihat agar ukurannya benar
+        if (typeof setupChartByRole === "function") setupChartByRole();
+      } else {
+        if (home) { home.classList.remove("bg-blue-600", "text-white"); home.classList.add("bg-gray-300"); }
+        body.setAttribute("data-tab", tab);
+        originalShowTab(tab);
+      }
+
+      var btn = document.getElementById(NAV_BTN[tab]);
+      var label = btn && btn.querySelector("span");
+      var crumb = document.getElementById("crumbCurrent");
+      if (crumb && label) crumb.textContent = label.textContent;
+
+      if (isDrawer()) window.closeSidebar();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  /* ---------- Input nilai / absensi yang nyaman di HP ---------- */
+  var CARD_INPUT = ".tbl-cards tbody input";
+
+  // Enter / tombol "Next" di keyboard HP → pindah ke kolom berikutnya
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var t = e.target;
+    if (!t.matches || !t.matches(CARD_INPUT)) return;
+    var all = Array.prototype.slice.call(t.closest("tbody").querySelectorAll("input:not([disabled])"));
+    var i = all.indexOf(t);
+    if (i > -1 && all[i + 1]) {
+      e.preventDefault();
+      all[i + 1].focus();
+    } else {
+      t.blur();
+    }
+  });
+
+  // Fokus → blok seluruh isi supaya langsung bisa ditimpa
+  document.addEventListener("focusin", function (e) {
+    var t = e.target;
+    if (t.matches && t.matches(CARD_INPUT) && t.type !== "text") {
+      setTimeout(function () { try { t.select(); } catch (_) {} }, 0);
+    }
+  });
+
+  // Di HP: ketuk kotak nilai yang terkunci → buka kunci baris itu (sama seperti tombol ✏️)
+  var tbodyNilai = document.getElementById("tabelNilai");
+  if (tbodyNilai) {
+    tbodyNilai.addEventListener("click", function (e) {
+      if (!isPhone()) return;
+      var td = e.target.closest("td.td-tp");
+      if (!td) return;
+      var input = td.querySelector("input");
+      if (!input || !input.disabled) return;
+      var tr = td.closest("tr");
+      var nis = tr && tr.children[0] ? tr.children[0].textContent.trim() : "";
+      if (nis && typeof editNilai === "function") {
+        editNilai(nis);
+        input.focus();
+      }
+    });
+  }
+})();
+
+  </script>
+</body>
 </html>
