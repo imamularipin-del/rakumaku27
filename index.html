@@ -138,18 +138,23 @@
     .topbar-left .topbar-burger { margin-left: 4px; }
     @media (min-width: 1024px) {
       /* lebar blok = lebar sidebar, sehingga tombol berada di ujung kanan sidebar */
-      .topbar-left { width: calc(var(--nav-w) - 16px); }
+      .topbar-left { min-width: calc(var(--nav-w) - 16px); }
       .topbar-left .topbar-burger { margin-left: auto; }
     }
     .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; }
+    @media (max-width: 1023px) {
+      .topbar-left { flex: 0 1 auto; }
+      .topbar-brand { flex: 0 1 auto; }
+    }
     .topbar-logo { box-sizing: border-box; width: 36px; height: 36px; flex: none; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
     /* nama aplikasi di atas, subjudul tepat di bawahnya; tinggi blok = tinggi logo */
     .topbar-text { height: 36px; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
-    .topbar-title { font-size: 19px; line-height: 20px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
+    .topbar-title { font-size: 19px; line-height: 20px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .topbar-sub { font-size: 12px; line-height: 14px; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* nama sekolah dan periode satu baris, di sisi kanan */
     .topbar-info { flex: 1 1 0; min-width: 0; margin-left: 0; display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
+    @media (max-width: 1023px) { .topbar-info { flex: 1 0 130px; } }
     .topbar-school { min-width: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .topbar-periode {
       flex: none;
@@ -459,9 +464,15 @@
       #modalTP button, #modalSiswa button, #modalEditUser button { min-height: 44px; }
     }
 
-    /* HP sangat sempit: singkat penulisan periode agar tidak terpotong */
+    /* HP: judul aplikasi diprioritaskan, subjudul dipotong titik-titik bila perlu */
+    @media (max-width: 767px) {
+      .topbar-sub { width: 0; min-width: 100%; }
+      .topbar-info { flex: 1 0 108px; }
+    }
+    /* HP sangat sempit: singkat penulisan periode dan sembunyikan kata "Aplikasi" */
     @media (max-width: 400px) {
       .topbar-periode .sep::before { content: " · "; }
+      .topbar-prefix { display: none; }
     }
 
   </style>
@@ -627,7 +638,7 @@
         <div class="topbar-brand">
           <img id="logoSekolah" class="topbar-logo" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo Rakumaku" />
           <div class="topbar-text">
-            <span class="topbar-title">Aplikasi Rakumaku</span>
+            <span class="topbar-title"><span class="topbar-prefix">Aplikasi </span>Rakumaku</span>
             <span class="topbar-sub">Rapor Kurikulum Merdeka Kuningan</span>
           </div>
         </div>
