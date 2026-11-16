@@ -1,0 +1,29 @@
+{
+  "id": "/",
+  "name": "Aplikasi Rakumaku",
+  "short_name": "Rakumaku",
+  "description": "Rapor Kurikulum Merdeka Kuningan",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#1f6fae",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa=s192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa=s512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#1f6fae" />
   <title>Aplikasi Rakumaku</title>
+
+  <!-- ===== PWA: agar bisa diinstal di HP dan laptop dengan logo aplikasi ===== -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="application-name" content="Rakumaku" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Rakumaku" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" />
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" />
   <script>
@@ -7525,5 +7533,13 @@ window.addEventListener('load', function() {
 })();
 
   </script>
+<script>
+  /* PWA: daftarkan service worker agar aplikasi dapat diinstal */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>
