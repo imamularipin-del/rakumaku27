@@ -133,11 +133,17 @@
     }
     .topbar-burger:hover { background: rgba(255, 255, 255, .14); }
     .topbar-burger svg, .sb-user-name svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .topbar-brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 0 1 auto; }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; }
+    .topbar-logo { width: 34px; height: 34px; flex: none; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
     .topbar-title { font-size: 20px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
     .topbar-sub { font-size: 14px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 1279px) { .topbar-sub { display: none; } }
+
+    /* nama sekolah dan periode satu baris, di sisi kanan */
+    .topbar-info { flex: 1 1 0; min-width: 0; margin-left: 12px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    .topbar-school { min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .topbar-periode {
-      margin-left: auto; flex: none;
+      flex: none;
       font-size: 13px; font-weight: 600;
       padding: 5px 10px; border-radius: 3px;
       background: rgba(255, 255, 255, .16);
@@ -183,7 +189,20 @@
     .sb-btn-out { background: #b83b30; }
     .sb-btn-out:hover { background: #cb4a3e; }
 
-    .sb-nav { flex: 1; padding: 6px 0 24px; }
+    .sb-nav { flex: 1 0 auto; padding: 6px 0 12px; }
+    .sb-logout {
+      position: sticky; bottom: 0; flex: none; margin-top: auto;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-sizing: border-box; width: 100%;
+      min-height: calc(46px + env(safe-area-inset-bottom, 0px));
+      padding: 0 16px env(safe-area-inset-bottom, 0px);
+      background: #b83b30; color: #fff;
+      font-size: 15px; font-weight: 600;
+      border: 0; border-radius: 0; cursor: pointer;
+    }
+    .sb-logout:hover { background: #cb4a3e; }
+    .sb-logout:focus-visible { outline: 2px solid #8fd0ff; outline-offset: -2px; }
+    .sb-logout svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     #sidebarMenu .nav-item {
       display: flex; align-items: center; gap: 12px;
       width: 100%; min-height: 46px; padding: 0 16px;
@@ -300,11 +319,18 @@
        MOBILE (≤ 767px): input nilai & absensi jadi kartu per siswa
        ===================================================================== */
     @media (max-width: 767px) {
-      .topbar-sub { display: none; }
-      .topbar-title { font-size: 19px; }
-      .topbar-periode { font-size: 12px; padding: 4px 8px; }
+      .topbar { gap: 8px; }
+      .topbar-brand { gap: 7px; }
+      .topbar-logo { width: 30px; height: 30px; }
+      .topbar-title { font-size: 17px; }
+      .topbar-info { flex-direction: column; align-items: flex-end; justify-content: center; gap: 1px; margin-left: 4px; }
+      .topbar-school {
+        max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: right;
+        white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      }
+      .topbar-periode { font-size: 11.5px; padding: 0; background: none; opacity: .92; }
       .topbar-periode .sep { font-size: 0; }
-      .topbar-periode .sep::before { content: " · Smt "; font-size: 12px; }
+      .topbar-periode .sep::before { content: " · Smt "; font-size: 11.5px; }
       .box { padding: 14px; }
       .kv { grid-template-columns: 1fr; gap: 2px; }
       .kv dd { margin-bottom: 8px; }
@@ -583,11 +609,15 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div class="topbar-brand">
+        <img id="logoSekolah" class="topbar-logo" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo Rakumaku" />
         <span class="topbar-title">Rakumaku</span>
         <span class="topbar-sub">Rapor Sekolah Kuningan</span>
       </div>
-      <div class="topbar-periode">
-        <span id="tahunAjaran">-</span><span class="sep"> — Semester </span><span id="semester">-</span>
+      <div class="topbar-info">
+        <span id="namaSekolah" class="topbar-school">Nama Sekolah</span>
+        <span class="topbar-periode">
+          <span id="tahunAjaran">-</span><span class="sep"> — Semester </span><span id="semester">-</span>
+        </span>
       </div>
     </header>
 
@@ -596,17 +626,11 @@
 
       <!-- ===== SIDEBAR KIRI ===== -->
       <aside id="sidebarMenu" class="sidebar" aria-label="Menu utama">
-        <div class="sb-school">
-          <img id="logoSekolah" src="https://lh3.googleusercontent.com/d/1JorPSKbAIaA5K_tF2hsh-pD_8eL70rRa" alt="Logo sekolah" />
-          <div id="namaSekolah" class="sb-school-name">Nama Sekolah</div>
-        </div>
-
         <div id="userInfo" class="sb-user hidden">
           <p class="sb-user-name"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span id="displayUser"></span></p>
           <select id="syncMapelSelect" class="sb-select hidden" aria-label="Mapel sinkronisasi"></select>
           <div class="sb-actions">
             <button type="button" id="btnSinkronisasi" onclick="jalankanSinkronisasi()" class="sb-btn sb-btn-sync hidden">Sinkronisasi</button>
-            <button type="button" onclick="logout()" class="sb-btn sb-btn-out">Keluar</button>
           </div>
         </div>
 
@@ -624,6 +648,11 @@
         <button type="button" onclick="showTab('users')" id="tabUsers" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.8-5.5 6.5-5.5s6.5 1.9 6.5 5.5"/><path d="M16 4.7a3.5 3.5 0 010 6.6M18.5 14.8c1.8.8 3 2.4 3 5.2"/></svg><span>Pengguna</span></button>
         <button type="button" onclick="showTab('appinfo')" id="tabAppInfo" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg><span>Info Aplikasi</span></button>
         </nav>
+
+        <button type="button" onclick="logout()" class="sb-logout">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9"/><path d="M6.3 6.6a8 8 0 1011.4 0"/></svg>
+          <span>Keluar</span>
+        </button>
       </aside>
 
       <!-- ===== KONTEN ===== -->
