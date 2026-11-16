@@ -149,8 +149,8 @@
     .topbar-sub { font-size: 12px; line-height: 14px; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* nama sekolah dan periode satu baris, di sisi kanan */
-    .topbar-info { flex: 1 1 0; min-width: 0; margin-left: 12px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-    .topbar-school { min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-info { flex: 1 1 0; min-width: 0; margin-left: 0; display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
+    .topbar-school { min-width: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .topbar-periode {
       flex: none;
       font-size: 13px; font-weight: 600;
@@ -336,9 +336,9 @@
       .topbar-text { height: 32px; }
       .topbar-title { font-size: 16px; line-height: 18px; }
       .topbar-sub { font-size: 10.5px; line-height: 12px; }
-      .topbar-info { flex-direction: column; align-items: flex-end; justify-content: center; gap: 1px; margin-left: 4px; }
+      .topbar-info { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; margin-left: 0; }
       .topbar-school {
-        max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: right;
+        max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: left;
         white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
       }
       .topbar-periode { font-size: 11.5px; padding: 0; background: none; opacity: .92; }
@@ -457,6 +457,11 @@
       #modalEditUser :is(input, textarea, select) { font-size: 16px; min-height: 44px; }
       #modalContentTP textarea { min-height: 76px; }
       #modalTP button, #modalSiswa button, #modalEditUser button { min-height: 44px; }
+    }
+
+    /* HP sangat sempit: singkat penulisan periode agar tidak terpotong */
+    @media (max-width: 400px) {
+      .topbar-periode .sep::before { content: " · "; }
     }
 
   </style>
