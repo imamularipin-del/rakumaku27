@@ -337,6 +337,15 @@
     .msb-edit { background: #d98a0b; }
     .msb-save { background: #2a8a4a; }
 
+
+    /* ---- Kokurikuler ---- */
+    #kokurBody textarea { width: 100%; min-width: 260px; min-height: 84px; padding: 6px 8px; border: 1px solid #b4c2d0; border-radius: 4px; font-size: 13px; line-height: 1.4; resize: vertical; }
+    #kokurBody td select { min-width: 130px; }
+    #kokurBody textarea.kokur-manual { background: #fffbe6; }
+    @media (max-width: 767px) {
+      #app .tbl-cards td.td-wide textarea { min-width: 0; font-size: 16px; }
+    }
+
     /* =====================================================================
        MOBILE (≤ 767px): input nilai & absensi jadi kartu per siswa
        ===================================================================== */
@@ -679,6 +688,7 @@
         <button type="button" onclick="showTab('beranda')" id="tabBeranda" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>Beranda</span></button>
         <button type="button" onclick="showTab('nilai')" id="tabNilai" class="nav-item bg-blue-600 text-white"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M8 9h7M8 13h7"/></svg><span>Nilai</span></button>
         <button type="button" onclick="showTab('absensi')" id="tabAbsensi" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Absensi</span></button>
+        <button type="button" onclick="showTab('kokurikuler')" id="tabKokurikuler" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z"/></svg><span>Kokurikuler</span></button>
         <button type="button" onclick="showTab('tp')" id="tabTp" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Tujuan Pembelajaran</span></button>
         <button type="button" onclick="showTab('pesanmapel')" id="tabPesanMapel" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span>Pesan Mapel</span></button>
         <button type="button" onclick="showTab('nilaisiswa')" id="tabNilaiSaya" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Nilai Saya</span></button>
@@ -1059,6 +1069,51 @@
 
       </div>
 
+    </section>
+
+    <!-- ================= TAB KOKURIKULER ================= -->
+    <section id="tab-content-kokurikuler" class="hidden space-y-4">
+
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800">
+        🌟 Kokurikuler — Penguatan Dimensi Profil Lulusan
+      </h2>
+
+      <div class="bg-white p-4 rounded-lg shadow space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label class="text-sm text-gray-600">Kelas</label>
+            <select id="kokurKelas" class="border px-3 py-2 rounded w-full" onchange="kokurMuatTema()">
+              <option value="">Pilih Kelas</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">Tema / Kegiatan</label>
+            <select id="kokurTema" class="border px-3 py-2 rounded w-full" onchange="kokurMuatSiswa()">
+              <option value="">Pilih Tema</option>
+            </select>
+          </div>
+          <div>
+            <button type="button" id="kokurBtnSemua" onclick="kokurSimpanSemua()"
+              class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">
+              💾 Simpan Semua
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">
+          Pilih level tiap dimensi, lalu deskripsi tersusun otomatis dari sheet
+          <b>DeskripsiKokurikuler</b>. Deskripsi tetap bisa Anda sunting. Kosongkan semua level
+          untuk menghapus data siswa pada tema ini.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto bg-white rounded-lg shadow wrap-cards">
+        <table class="tbl-cards w-full table-auto text-sm">
+          <thead id="kokurHead" class="bg-gray-200 text-gray-700"></thead>
+          <tbody id="kokurBody">
+            <tr><td class="px-3 py-6 text-center text-gray-500">Pilih kelas dan tema terlebih dahulu.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <!-- ================= TAB PESAN MAPEL ================= -->
@@ -2901,6 +2956,7 @@ function unggahAbsensi() {
       const allTabs = [
         "tabNilai",
         "tabAbsensi",
+        "tabKokurikuler",
         "tabIdentitas",
         "tabUsers",
         "tabAppInfo",
@@ -2951,6 +3007,9 @@ function unggahAbsensi() {
           ?.classList.remove("hidden");
 
         document.getElementById("tabAbsensi")
+          ?.classList.remove("hidden");
+
+        document.getElementById("tabKokurikuler")
           ?.classList.remove("hidden");
 
         document.getElementById("tabIdentitas")
@@ -3078,6 +3137,9 @@ function unggahAbsensi() {
         if (!mapelTanpaAbsensi.includes(mapel)) {
 
           document.getElementById("tabAbsensi")
+            ?.classList.remove("hidden");
+
+          document.getElementById("tabKokurikuler")
             ?.classList.remove("hidden");
 
         }
@@ -3906,9 +3968,37 @@ function cetakRapor(nis) {
 
         });
 
+        // ====================== KOKURIKULER ======================
+        const kokurEscape = t => String(t == null ? "" : t)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const kokurData = Array.isArray(data.kokurikuler) ? data.kokurikuler : [];
+        let htmlKokur = "";
+        if (kokurData.length) {
+          htmlKokur = `
+          <div style="margin-top:15px; font-weight:bold; page-break-after:avoid;">Kokurikuler</div>
+          <table class="table-nilai" style="margin-top:4px;">
+            <thead>
+              <tr>
+                <th style="width:5%">No.</th>
+                <th style="width:22%">Kegiatan Kokurikuler</th>
+                <th style="width:20%">Dimensi Profil Lulusan</th>
+                <th>Deskripsi Capaian</th>
+              </tr>
+            </thead>
+            ${kokurData.map((k, i) => `
+            <tr>
+              <td style="text-align:center">${i + 1}</td>
+              <td>${kokurEscape(k.tema)}</td>
+              <td>${kokurEscape(k.dimensi)}</td>
+              <td>${kokurEscape(k.deskripsi)}</td>
+            </tr>`).join("")}
+          </table>`;
+        }
+
         // ====================== ABSENSI DIMASUKKAN DI SINI ======================
         html += `
         </table>
+        ${htmlKokur}
         <table style="width:100%; margin-top:20px; border-collapse:collapse;">
             <tr>
 
@@ -4062,6 +4152,235 @@ function cetakRapor(nis) {
     .getRaporSiswa(nis, namaGuru);
 }
   
+  </script>
+
+
+  <!-- ================= KOKURIKULER (input & deskripsi otomatis) ================= -->
+  <script>
+  var KOKUR = { kelas: "", tema: "", levelList: [], dimensi: [], siswa: [] };
+
+  function kokurEsc(t) {
+    return String(t == null ? "" : t)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function kokurUser() { return localStorage.getItem("userId") || ""; }
+
+  // Susun deskripsi dari bank kalimat (aturan sama dengan di server)
+  function kokurSusun(nama, levels) {
+    var kal = [];
+    KOKUR.dimensi.forEach(function (d) {
+      var lv = levels[d.dimensi];
+      var k = lv && d.levels ? d.levels[lv] : "";
+      if (k) kal.push(String(k).replace(/\{nama\}/gi, nama));
+    });
+    return kal.join(" ");
+  }
+
+  function kokurBukaTab() {
+    var sel = document.getElementById("kokurKelas");
+    var src = document.getElementById("filterKelasAbsensi");
+    var lama = sel.value;
+
+    if (src && src.options.length > 1) {
+      sel.innerHTML = src.innerHTML;
+      if (lama) sel.value = lama;
+      return;
+    }
+    // cadangan: ambil dari server bila dropdown Absensi belum terisi
+    google.script.run
+      .withSuccessHandler(function (list) {
+        sel.innerHTML = '<option value="">Pilih Kelas</option>' +
+          (list || []).map(function (k) { return '<option value="' + kokurEsc(k) + '">' + kokurEsc(k) + '</option>'; }).join("");
+        if (lama) sel.value = lama;
+      })
+      .getKelasList();
+  }
+
+  function kokurReset(pesan) {
+    document.getElementById("kokurHead").innerHTML = "";
+    document.getElementById("kokurBody").innerHTML =
+      '<tr><td class="px-3 py-6 text-center text-gray-500">' + kokurEsc(pesan) + '</td></tr>';
+    KOKUR.siswa = []; KOKUR.dimensi = [];
+  }
+
+  function kokurMuatTema() {
+    var kelas = document.getElementById("kokurKelas").value;
+    var selTema = document.getElementById("kokurTema");
+    selTema.innerHTML = '<option value="">Pilih Tema</option>';
+    KOKUR.kelas = kelas; KOKUR.tema = "";
+    kokurReset("Pilih kelas dan tema terlebih dahulu.");
+    if (!kelas) return;
+
+    notifLoading("Memuat tema...");
+    google.script.run
+      .withSuccessHandler(function (list) {
+        closeLoading();
+        list = list || [];
+        if (!list.length) {
+          notifWarning("Belum ada tema untuk kelas ini. Isi dulu sheet DeskripsiKokurikuler.");
+          return;
+        }
+        list.forEach(function (t) {
+          var o = document.createElement("option");
+          o.value = t; o.textContent = t;
+          selTema.appendChild(o);
+        });
+        if (list.length === 1) { selTema.value = list[0]; kokurMuatSiswa(); }
+      })
+      .withFailureHandler(function (err) {
+        closeLoading();
+        notifError("Gagal memuat tema: " + (err.message || err));
+      })
+      .getKokurikulerTemaList(kokurUser(), kelas);
+  }
+
+  function kokurMuatSiswa() {
+    var kelas = document.getElementById("kokurKelas").value;
+    var tema = document.getElementById("kokurTema").value;
+    KOKUR.kelas = kelas; KOKUR.tema = tema;
+    if (!kelas || !tema) { kokurReset("Pilih kelas dan tema terlebih dahulu."); return; }
+
+    notifLoading("Memuat data siswa...");
+    google.script.run
+      .withSuccessHandler(function (data) {
+        closeLoading();
+        KOKUR.levelList = data.levelList || [];
+        KOKUR.dimensi = data.dimensi || [];
+        KOKUR.siswa = data.siswa || [];
+        kokurRender();
+      })
+      .withFailureHandler(function (err) {
+        closeLoading();
+        notifError("Gagal memuat data: " + (err.message || err));
+      })
+      .getKokurikulerInput(kokurUser(), kelas, tema);
+  }
+
+  function kokurRender() {
+    var head = document.getElementById("kokurHead");
+    var body = document.getElementById("kokurBody");
+
+    if (!KOKUR.siswa.length) { kokurReset("Tidak ada siswa di kelas ini."); return; }
+
+    head.innerHTML = '<tr><th class="px-3 py-2 text-left">Nama</th>' +
+      KOKUR.dimensi.map(function (d) { return '<th class="px-3 py-2">' + kokurEsc(d.dimensi) + '</th>'; }).join("") +
+      '<th class="px-3 py-2">Deskripsi Capaian</th><th class="px-3 py-2">Aksi</th></tr>';
+
+    body.innerHTML = "";
+    KOKUR.siswa.forEach(function (s, idx) {
+      var tr = document.createElement("tr");
+      tr.dataset.idx = idx;
+
+      var sel = KOKUR.dimensi.map(function (d, di) {
+        var opts = '<option value="">-</option>' + KOKUR.levelList.map(function (l) {
+          return '<option value="' + kokurEsc(l) + '"' + (s.levels[d.dimensi] === l ? " selected" : "") + '>' + kokurEsc(l) + '</option>';
+        }).join("");
+        return '<td class="border px-2 py-1 td-half" data-label="' + kokurEsc(d.dimensi) + '">' +
+               '<select class="border rounded w-full" data-di="' + di + '" onchange="kokurLevelBerubah(this)">' + opts + '</select></td>';
+      }).join("");
+
+      // deskripsi tersimpan yang berbeda dari hasil otomatis = hasil suntingan manual
+      var otomatis = kokurSusun(s.nama, s.levels);
+      var manual = !!(s.deskripsi && s.deskripsi !== otomatis);
+
+      tr.innerHTML =
+        '<td class="border px-2 py-1 text-left td-nama">' + kokurEsc(s.nama) +
+          '<div class="text-xs text-gray-500 font-normal">NIS ' + kokurEsc(s.nis) + '</div></td>' +
+        sel +
+        '<td class="border px-2 py-1 td-wide" data-label="Deskripsi capaian">' +
+          '<textarea class="kokur-ta' + (manual ? " kokur-manual" : "") + '" data-manual="' + (manual ? "1" : "") + '" oninput="kokurDiedit(this)">' +
+          kokurEsc(s.deskripsi || otomatis) + '</textarea></td>' +
+        '<td class="td-aksi"><button type="button" onclick="kokurSimpanSatu(' + idx + ', this)" ' +
+          'class="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">💾<span class="btn-lbl">Simpan</span></button></td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function kokurBaca(tr) {
+    var s = KOKUR.siswa[tr.dataset.idx];
+    var levels = {};
+    tr.querySelectorAll("select[data-di]").forEach(function (el) {
+      if (el.value) levels[KOKUR.dimensi[el.dataset.di].dimensi] = el.value;
+    });
+    return { s: s, levels: levels, ta: tr.querySelector("textarea") };
+  }
+
+  function kokurDiedit(ta) {
+    ta.dataset.manual = "1";
+    ta.classList.add("kokur-manual");
+  }
+
+  function kokurLevelBerubah(selEl) {
+    var tr = selEl.closest("tr");
+    var b = kokurBaca(tr);
+    var baru = kokurSusun(b.s.nama, b.levels);
+
+    function terapkan() {
+      b.ta.value = baru;
+      b.ta.dataset.manual = "";
+      b.ta.classList.remove("kokur-manual");
+    }
+    if (b.ta.dataset.manual === "1" && b.ta.value.trim()) {
+      notifConfirm("Deskripsi sudah Anda sunting. Susun ulang otomatis dari level terbaru?")
+        .then(function (r) { if (r.isConfirmed) terapkan(); });
+    } else {
+      terapkan();
+    }
+  }
+
+  function kokurSimpan(rows, btn, pesanSukses) {
+    var kelas = KOKUR.kelas, tema = KOKUR.tema;
+    if (!kelas || !tema) { notifWarning("Pilih kelas dan tema dulu."); return; }
+
+    notifLoading("Menyimpan kokurikuler...");
+    if (btn) btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(function (res) {
+        closeLoading();
+        if (btn) btn.disabled = false;
+        res = res || {};
+        // samakan kolom deskripsi dengan yang tersimpan (mis. hasil susun otomatis dari server)
+        document.querySelectorAll("#kokurBody tr[data-idx]").forEach(function (tr) {
+          var s = KOKUR.siswa[tr.dataset.idx];
+          var b = kokurBaca(tr);
+          if (res.deskripsi && res.deskripsi[s.nis] != null) {
+            s.deskripsi = res.deskripsi[s.nis];
+            b.ta.value = s.deskripsi;
+          }
+          s.levels = b.levels;
+        });
+        if (res.ditolak && res.ditolak.length) {
+          notifWarning("Sebagian tidak tersimpan: " + res.ditolak.join("; "));
+        } else {
+          notifSukses(pesanSukses(res));
+        }
+      })
+      .withFailureHandler(function (err) {
+        closeLoading();
+        if (btn) btn.disabled = false;
+        notifError("Gagal menyimpan: " + (err.message || err));
+      })
+      .saveKokurikulerBatch(kokurUser(), kelas, tema, rows);
+  }
+
+  function kokurSimpanSatu(idx, btn) {
+    var tr = btn.closest("tr");
+    var b = kokurBaca(tr);
+    kokurSimpan([{ nis: b.s.nis, levels: b.levels, deskripsi: b.ta.value.trim() }], btn,
+      function () { return "Data " + b.s.nama + " tersimpan"; });
+  }
+
+  function kokurSimpanSemua() {
+    var rows = [];
+    document.querySelectorAll("#kokurBody tr[data-idx]").forEach(function (tr) {
+      var b = kokurBaca(tr);
+      rows.push({ nis: b.s.nis, levels: b.levels, deskripsi: b.ta.value.trim() });
+    });
+    if (!rows.length) { notifWarning("Tidak ada data siswa."); return; }
+    kokurSimpan(rows, document.getElementById("kokurBtnSemua"), function (res) {
+      return (res.disimpan || 0) + " siswa tersimpan" + (res.dihapus ? ", " + res.dihapus + " dihapus" : "");
+    });
+  }
   </script>
 
   <script>
@@ -4234,6 +4553,7 @@ function showTab(tab) {
   const tabs = [
     'nilai',
     'absensi',
+    'kokurikuler',
     'identitas',
     'users',
     'appinfo',
@@ -4251,6 +4571,7 @@ function showTab(tab) {
   const tabButtons = {
     nilai: "tabNilai",
     absensi: "tabAbsensi",
+    kokurikuler: "tabKokurikuler",
     identitas: "tabIdentitas",
     users: "tabUsers",
     appinfo: "tabAppInfo",
@@ -4349,6 +4670,10 @@ function showTab(tab) {
 
     case 'absensi':
       loadAbsensi();
+      break;
+
+    case 'kokurikuler':
+      kokurBukaTab();
       break;
 
     case 'appinfo':
@@ -6355,6 +6680,7 @@ function setupSiswaMode() {
   const hideMenus = [
     'tabNilai',
     'tabAbsensi',
+    'tabKokurikuler',
     'tabUsers',
     'tabTp',
     'tabDatasiswa',
@@ -7413,7 +7739,7 @@ window.addEventListener('load', function() {
 (function () {
   var body = document.body;
   var NAV_BTN = {
-    beranda: "tabBeranda", nilai: "tabNilai", absensi: "tabAbsensi", tp: "tabTp",
+    beranda: "tabBeranda", nilai: "tabNilai", absensi: "tabAbsensi", kokurikuler: "tabKokurikuler", tp: "tabTp",
     pesanmapel: "tabPesanMapel", nilaisiswa: "tabNilaiSaya", datasiswa: "tabDatasiswa",
     mapel: "tabMapel", aturanmapel: "tabAturanMapel", identitas: "tabIdentitas",
     users: "tabUsers", appinfo: "tabAppInfo"
