@@ -3918,6 +3918,7 @@ function cetakRapor(nis) {
             }
             .table-nilai th { background:#f2f2f2; text-align:center; }
             .table-nilai thead { display:table-header-group; }
+            .judul-bagian { margin-top:14px; font-weight:bold; font-size:12px; page-break-after:avoid; break-after:avoid; }
             .identitas table { width:100%; border-collapse:collapse; margin-bottom:15px; }
             .identitas td { padding:4px 8px; }
             .footer { margin-top:40px; text-align:center; width:100%; }
@@ -3994,8 +3995,9 @@ function cetakRapor(nis) {
           </table>
         </div>
 
-        <!-- TABEL NILAI -->
-        <table class="table-nilai">
+        <!-- A. INTRAKURIKULER -->
+        <div class="judul-bagian" style="margin-top:0;">A. Intrakurikuler</div>
+        <table class="table-nilai" style="margin-top:4px;">
           <thead>
             <tr>
               <th>No.</th>
@@ -4063,132 +4065,92 @@ function cetakRapor(nis) {
 
         });
 
-        // ====================== KOKURIKULER ======================
+        // ====================== PENATAAN BAGIAN RAPOR ======================
         const kokurEscape = t => String(t == null ? "" : t)
           .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        // ---- B. KOKURIKULER (selalu tampil; "-" bila belum ada data) ----
         const kokurData = Array.isArray(data.kokurikuler) ? data.kokurikuler : [];
-        let htmlKokur = "";
-        if (kokurData.length) {
-          htmlKokur = `
-          <div style="margin-top:15px; font-weight:bold; page-break-after:avoid;">Kokurikuler</div>
-          <table class="table-nilai" style="margin-top:4px;">
-            <thead>
-              <tr>
-                <th style="width:5%">No.</th>
-                <th style="width:22%">Kegiatan Kokurikuler</th>
-                <th style="width:20%">Dimensi Profil Lulusan</th>
-                <th>Deskripsi Capaian</th>
-              </tr>
-            </thead>
-            ${kokurData.map((k, i) => `
+        const barisKokur = kokurData.length
+          ? kokurData.map((k, i) => `
             <tr>
               <td style="text-align:center">${i + 1}</td>
               <td>${kokurEscape(k.tema)}</td>
               <td>${kokurEscape(k.dimensi)}</td>
               <td>${kokurEscape(k.deskripsi)}</td>
-            </tr>`).join("")}
-          </table>`;
-        }
+            </tr>`).join("")
+          : `<tr><td colspan="4" style="text-align:center">-</td></tr>`;
 
-        // ====================== ABSENSI DIMASUKKAN DI SINI ======================
+        const htmlKokur = `
+        <div class="judul-bagian">B. Kokurikuler</div>
+        <table class="table-nilai" style="margin-top:4px;">
+          <thead>
+            <tr>
+              <th style="width:5%">No.</th>
+              <th style="width:22%">Kegiatan Kokurikuler</th>
+              <th style="width:20%">Dimensi Profil Lulusan</th>
+              <th>Deskripsi Capaian</th>
+            </tr>
+          </thead>
+          ${barisKokur}
+        </table>`;
+
+        // ---- C. EKSTRAKURIKULER ----
+        const adaEkskul = !!String(absensi.ekskul || "").trim();
+        const barisEkskul = adaEkskul
+          ? `<tr>
+              <td style="text-align:center">1</td>
+              <td>${kokurEscape(absensi.ekskul)}</td>
+              <td style="text-align:center">${kokurEscape(absensi.nilaiEkskul || "-")}</td>
+              <td>${kokurEscape(absensi.ketEkskul || "-")}</td>
+            </tr>`
+          : `<tr><td colspan="4" style="text-align:center">-</td></tr>`;
+
+        const htmlEkskul = `
+        <div class="judul-bagian">C. Ekstrakurikuler</div>
+        <table class="table-nilai" style="margin-top:4px;">
+          <thead>
+            <tr>
+              <th style="width:5%">No.</th>
+              <th style="width:35%">Kegiatan Ekstrakurikuler</th>
+              <th style="width:15%">Predikat / Nilai</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          ${barisEkskul}
+        </table>`;
+
+        // ---- KETIDAKHADIRAN & DATA PERIODIK (berdampingan, di bawah C) ----
+        const tbTampil = absensi.tb ? `${kokurEscape(absensi.tb)} cm` : "-";
+        const bbTampil = absensi.bb ? `${kokurEscape(absensi.bb)} kg` : "-";
+
+        const htmlHadirPeriodik = `
+        <table style="width:100%; margin-top:14px; border-collapse:collapse;">
+          <tr>
+            <td style="width:50%; vertical-align:top; padding-right:6px;">
+              <table class="table-nilai" style="width:100%; margin-top:0;">
+                <tr><th colspan="2">Ketidakhadiran</th></tr>
+                <tr><td style="width:60%">Sakit</td><td style="text-align:center">${absensi.sakit || 0} hari</td></tr>
+                <tr><td>Izin</td><td style="text-align:center">${absensi.izin || 0} hari</td></tr>
+                <tr><td>Tanpa Keterangan (Alpa)</td><td style="text-align:center">${absensi.alpa || 0} hari</td></tr>
+              </table>
+            </td>
+            <td style="width:50%; vertical-align:top; padding-left:6px;">
+              <table class="table-nilai" style="width:100%; margin-top:0;">
+                <tr><th colspan="2">Data Periodik</th></tr>
+                <tr><td style="width:60%">Tinggi Badan</td><td style="text-align:center">${tbTampil}</td></tr>
+                <tr><td>Berat Badan</td><td style="text-align:center">${bbTampil}</td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>`;
+
+        // ====================== SUSUN: A (tabel nilai) -> B -> C -> Ketidakhadiran & Periodik ======================
         html += `
         </table>
         ${htmlKokur}
-        <table style="width:100%; margin-top:20px; border-collapse:collapse;">
-            <tr>
-
-              <!-- REKAP KEHADIRAN -->
-              <td style="width:33%; vertical-align:top; padding-right:5px;">
-
-                <table class="table-nilai" style="width:100%;">
-                  <tr>
-                    <th colspan="3">Rekapitulasi Kehadiran</th>
-                  </tr>
-
-                  <tr>
-                    <th>Sakit</th>
-                    <th>Izin</th>
-                    <th>Alpa</th>
-                  </tr>
-
-                  <tr>
-                    <td style="text-align:center">
-                      ${absensi.sakit || 0}
-                    </td>
-
-                    <td style="text-align:center">
-                      ${absensi.izin || 0}
-                    </td>
-
-                    <td style="text-align:center">
-                      ${absensi.alpa || 0}
-                    </td>
-                  </tr>
-                </table>
-
-              </td>
-
-
-              <!-- PERIODIK -->
-              <td style="width:33%; vertical-align:top; padding:0 5px;">
-
-                <table class="table-nilai" style="width:100%;">
-                  <tr>
-                    <th colspan="2">Data Periodik</th>
-                  </tr>
-
-                  <tr>
-                    <th>Tinggi</th>
-                    <td style="text-align:center">
-                      ${absensi.tb || "-"} cm
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th>Berat</th>
-                    <td style="text-align:center">
-                      ${absensi.bb || "-"} kg
-                    </td>
-                  </tr>
-                </table>
-
-              </td>
-
-
-              <!-- EKSKUL -->
-              <td style="width:34%; vertical-align:top; padding-left:5px;">
-
-                <table class="table-nilai" style="width:100%;">
-                  <tr>
-                    <th colspan="3">Ekstrakurikuler</th>
-                  </tr>
-
-                  <tr>
-                    <th>Kegiatan</th>
-                    <th>Nilai</th>
-                    <th>Ket</th>
-                  </tr>
-
-                  <tr>
-                    <td>
-                      ${absensi.ekskul || "-"}
-                    </td>
-
-                    <td style="text-align:center">
-                      ${absensi.nilaiEkskul || "-"}
-                    </td>
-
-                    <td>
-                      ${absensi.ketEkskul || "-"}
-                    </td>
-                  </tr>
-                </table>
-
-              </td>
-
-            </tr>
-          </table>
-        </div>
+        ${htmlEkskul}
+        ${htmlHadirPeriodik}
 
         <br><strong>Catatan Rapor:</strong><br>
         ${catatanRapor}
