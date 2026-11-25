@@ -338,6 +338,14 @@
     .msb-save { background: #2a8a4a; }
 
 
+    /* ---- Bank Kokurikuler ---- */
+    #bankBody textarea { width: 100%; min-width: 210px; min-height: 96px; padding: 6px 8px; border: 1px solid #b4c2d0; border-radius: 4px; font-size: 13px; line-height: 1.4; resize: vertical; }
+    #bankBody input { width: 100%; min-width: 120px; padding: 6px 8px; border: 1px solid #b4c2d0; border-radius: 4px; }
+    #bankBody td { vertical-align: top; }
+    @media (max-width: 767px) {
+      #app .tbl-cards td.td-wide textarea { min-width: 0; font-size: 16px; }
+    }
+
     /* ---- Kokurikuler ---- */
     #kokurBody textarea { width: 100%; min-width: 260px; min-height: 84px; padding: 6px 8px; border: 1px solid #b4c2d0; border-radius: 4px; font-size: 13px; line-height: 1.4; resize: vertical; }
     #kokurBody td select { min-width: 130px; }
@@ -689,6 +697,7 @@
         <button type="button" onclick="showTab('nilai')" id="tabNilai" class="nav-item bg-blue-600 text-white"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M8 9h7M8 13h7"/></svg><span>Nilai</span></button>
         <button type="button" onclick="showTab('absensi')" id="tabAbsensi" class="nav-item bg-gray-300"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Absensi</span></button>
         <button type="button" onclick="showTab('kokurikuler')" id="tabKokurikuler" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z"/></svg><span>Kokurikuler</span></button>
+        <button type="button" onclick="showTab('bankkokurikuler')" id="tabBankKokurikuler" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 012-2h12v16H6a2 2 0 00-2 2V5z"/><path d="M4 19a2 2 0 012-2h12M9 7h6M9 11h6"/></svg><span>Bank Kokurikuler</span></button>
         <button type="button" onclick="showTab('tp')" id="tabTp" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Tujuan Pembelajaran</span></button>
         <button type="button" onclick="showTab('pesanmapel')" id="tabPesanMapel" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span>Pesan Mapel</span></button>
         <button type="button" onclick="showTab('nilaisiswa')" id="tabNilaiSaya" class="nav-item bg-gray-300 hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Nilai Saya</span></button>
@@ -1112,6 +1121,67 @@
           <tbody id="kokurBody">
             <tr><td class="px-3 py-6 text-center text-gray-500">Pilih kelas dan tema terlebih dahulu.</td></tr>
           </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= TAB BANK KOKURIKULER (admin / superadmin) ================= -->
+    <section id="tab-content-bankkokurikuler" class="hidden space-y-4">
+
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800">
+        📚 Bank Deskripsi Kokurikuler
+      </h2>
+
+      <div class="bg-white p-4 rounded-lg shadow space-y-3">
+        <p class="text-sm text-gray-600">
+          Khusus admin / superadmin. Atur tema, dimensi, dan kalimat deskripsi tiap level. Isi tabel ini
+          menjadi dropdown tema di tab <b>Kokurikuler</b> dan menjadi sumber deskripsi otomatis di rapor.
+          Gunakan <b>{nama}</b> bila ingin nama siswa muncul di kalimat. Kolom Kelas: <b>semua</b>, atau
+          daftar seperti <b>4;5;6</b>.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="text-sm text-gray-600">Tampilkan tema</label>
+            <select id="bankFilterTema" class="border px-3 py-2 rounded w-full" onchange="bankRender()"></select>
+          </div>
+          <div>
+            <button type="button" onclick="bankTambah()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">➕ Tambah baris</button>
+          </div>
+          <div>
+            <button type="button" onclick="bankIsiBawaan()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 w-full">📥 Tambah bank bawaan</button>
+          </div>
+          <div>
+            <button type="button" id="bankBtnSimpan" onclick="bankSimpan()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">💾 Simpan Semua</button>
+          </div>
+        </div>
+
+        <p class="text-xs text-amber-700">
+          Perhatian: jangan mengganti nama Tema atau Dimensi yang sudah dipakai menilai siswa. Data siswa lama
+          menyimpan nama aslinya dan dimensinya bisa tidak terbaca. Untuk tema baru, tambahkan baris baru.
+          Perubahan baru tersimpan setelah menekan <b>Simpan Semua</b>.
+        </p>
+        <p id="bankStatus" class="text-xs text-gray-500"></p>
+        <datalist id="bankDimensiList"></datalist>
+        <datalist id="bankTemaList"></datalist>
+      </div>
+
+      <div class="overflow-x-auto bg-white rounded-lg shadow wrap-cards">
+        <table class="tbl-cards w-full table-auto text-sm">
+          <thead class="bg-gray-200 text-gray-700">
+            <tr>
+              <th class="px-2 py-2">No</th>
+              <th class="px-2 py-2">Kelas</th>
+              <th class="px-2 py-2">Tema</th>
+              <th class="px-2 py-2">Dimensi</th>
+              <th class="px-2 py-2">Perlu Bimbingan</th>
+              <th class="px-2 py-2">Cukup</th>
+              <th class="px-2 py-2">Baik</th>
+              <th class="px-2 py-2">Sangat Baik</th>
+              <th class="px-2 py-2">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="bankBody"></tbody>
         </table>
       </div>
     </section>
@@ -2957,6 +3027,7 @@ function unggahAbsensi() {
         "tabNilai",
         "tabAbsensi",
         "tabKokurikuler",
+        "tabBankKokurikuler",
         "tabIdentitas",
         "tabUsers",
         "tabAppInfo",
@@ -3010,6 +3081,10 @@ function unggahAbsensi() {
           ?.classList.remove("hidden");
 
         document.getElementById("tabKokurikuler")
+          ?.classList.remove("hidden");
+
+        // Bank Kokurikuler: khusus admin / superadmin
+        document.getElementById("tabBankKokurikuler")
           ?.classList.remove("hidden");
 
         document.getElementById("tabIdentitas")
@@ -4383,6 +4458,211 @@ function cetakRapor(nis) {
   }
   </script>
 
+
+  <!-- ================= BANK KOKURIKULER (admin / superadmin) ================= -->
+  <script>
+  var BANK = { rows: [], asli: [], levelList: [], dimensiResmi: [], dipakai: {}, dirty: false };
+
+  function bankEsc(t) {
+    return String(t == null ? "" : t)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function bankUser() { return localStorage.getItem("userId") || ""; }
+  function bankKunci(t, d) { return String(t || "").trim().toLowerCase() + "|" + String(d || "").trim().toLowerCase(); }
+
+  // Tema/dimensi yang hilang atau berganti nama padahal sudah dipakai menilai siswa
+  function bankPeringatan(rowsNow, asliList, dipakai) {
+    var sekarang = {};
+    rowsNow.forEach(function (r) { sekarang[bankKunci(r.tema, r.dimensi)] = true; });
+    var hilang = {};
+    asliList.forEach(function (a) {
+      if (!sekarang[bankKunci(a.tema, a.dimensi)]) {
+        var n = dipakai[a.tema] || 0;
+        if (n > 0) hilang[a.tema] = n;
+      }
+    });
+    return Object.keys(hilang).map(function (t) { return t + " (" + hilang[t] + " siswa)"; });
+  }
+
+  function bankBuka() {
+    if (BANK.dirty && BANK.rows.length) { bankRender(); return; }   // jangan buang perubahan yang belum disimpan
+    bankMuat();
+  }
+
+  function bankMuat() {
+    notifLoading("Memuat bank kokurikuler...");
+    google.script.run
+      .withSuccessHandler(function (d) {
+        closeLoading();
+        d = d || {};
+        BANK.levelList = d.levelList || [];
+        BANK.dimensiResmi = d.dimensiResmi || [];
+        BANK.dipakai = d.dipakai || {};
+        BANK.rows = (d.rows || []).map(function (r) {
+          return { kelas: r.kelas, tema: r.tema, dimensi: r.dimensi, levels: r.levels || {} };
+        });
+        BANK.asli = BANK.rows.map(function (r) { return { tema: r.tema, dimensi: r.dimensi }; });
+        BANK.dirty = false;
+        document.getElementById("bankDimensiList").innerHTML =
+          BANK.dimensiResmi.map(function (x) { return '<option value="' + bankEsc(x) + '">'; }).join("");
+        bankRender();
+      })
+      .withFailureHandler(function (err) {
+        closeLoading();
+        notifError("Gagal memuat bank kokurikuler: " + (err.message || err));
+      })
+      .getBankKokurikuler(bankUser());
+  }
+
+  function bankRender() {
+    var body = document.getElementById("bankBody");
+    var sel = document.getElementById("bankFilterTema");
+
+    var temaUnik = [];
+    BANK.rows.forEach(function (r) {
+      var t = String(r.tema || "").trim();
+      if (t && temaUnik.indexOf(t) < 0) temaUnik.push(t);
+    });
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">Semua tema (' + BANK.rows.length + ' baris)</option>' +
+      temaUnik.map(function (t) { return '<option value="' + bankEsc(t) + '">' + bankEsc(t) + '</option>'; }).join("");
+    if (cur && temaUnik.indexOf(cur) >= 0) sel.value = cur;
+    var filter = sel.value;
+
+    document.getElementById("bankTemaList").innerHTML =
+      temaUnik.map(function (t) { return '<option value="' + bankEsc(t) + '">'; }).join("");
+
+    body.innerHTML = "";
+    var tampil = 0;
+    BANK.rows.forEach(function (r, i) {
+      if (filter && String(r.tema || "").trim() !== filter) return;
+      tampil++;
+
+      var pakai = BANK.dipakai[String(r.tema || "").trim()] || 0;
+      var tr = document.createElement("tr");
+      tr.dataset.i = i;
+      tr.innerHTML =
+        '<td class="border px-2 py-1 td-meta text-center" data-label="Baris">' + (i + 1) + '</td>' +
+        '<td class="border px-2 py-1 td-half" data-label="Kelas"><input type="text" data-f="kelas" value="' + bankEsc(r.kelas) + '" placeholder="semua" oninput="bankEdit(this)"></td>' +
+        '<td class="border px-2 py-1 td-wide" data-label="Tema / Kegiatan"><input type="text" data-f="tema" list="bankTemaList" value="' + bankEsc(r.tema) + '" oninput="bankEdit(this)">' +
+          (pakai ? '<div class="text-xs text-gray-500 mt-1">sudah dipakai ' + pakai + ' siswa</div>' : '') + '</td>' +
+        '<td class="border px-2 py-1 td-wide" data-label="Dimensi"><input type="text" data-f="dimensi" list="bankDimensiList" value="' + bankEsc(r.dimensi) + '" oninput="bankEdit(this)"></td>' +
+        BANK.levelList.map(function (l, li) {
+          return '<td class="border px-2 py-1 td-wide" data-label="' + bankEsc(l) + '"><textarea data-lv="' + li + '" oninput="bankEdit(this)">' +
+                 bankEsc(r.levels[l] || "") + '</textarea></td>';
+        }).join("") +
+        '<td class="td-aksi"><button type="button" onclick="bankHapus(this)" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">🗑<span class="btn-lbl">Hapus</span></button></td>';
+      body.appendChild(tr);
+    });
+
+    if (!tampil) {
+      body.innerHTML = '<tr><td colspan="9" class="px-3 py-6 text-center text-gray-500">Belum ada baris. Klik "Tambah baris" atau "Tambah bank bawaan".</td></tr>';
+    }
+    document.getElementById("bankStatus").textContent =
+      BANK.dirty ? "Ada perubahan yang belum disimpan." : "Semua perubahan sudah tersimpan.";
+  }
+
+  function bankEdit(el) {
+    var tr = el.closest("tr");
+    var r = BANK.rows[tr.dataset.i];
+    if (!r) return;
+    if (el.dataset.f) r[el.dataset.f] = el.value;
+    else r.levels[BANK.levelList[el.dataset.lv]] = el.value;
+    BANK.dirty = true;
+    document.getElementById("bankStatus").textContent = "Ada perubahan yang belum disimpan.";
+  }
+
+  function bankTambah() {
+    var filter = document.getElementById("bankFilterTema").value;
+    BANK.rows.push({ kelas: "semua", tema: filter, dimensi: "", levels: {} });
+    BANK.dirty = true;
+    bankRender();
+    var trs = document.querySelectorAll("#bankBody tr[data-i]");
+    var last = trs[trs.length - 1];
+    if (last) {
+      last.scrollIntoView({ behavior: "smooth", block: "center" });
+      var f = last.querySelector(filter ? 'input[data-f="dimensi"]' : 'input[data-f="tema"]');
+      if (f) f.focus();
+    }
+  }
+
+  function bankHapus(btn) {
+    var i = Number(btn.closest("tr").dataset.i);
+    var r = BANK.rows[i];
+    if (!r) return;
+    var pakai = BANK.dipakai[String(r.tema || "").trim()] || 0;
+    var msg = 'Hapus baris "' + (r.tema || "(tanpa tema)") + " / " + (r.dimensi || "(tanpa dimensi)") + '"?' +
+      (pakai ? " Tema ini sudah dipakai " + pakai + " siswa." : "");
+    notifConfirm(msg).then(function (res) {
+      if (!res.isConfirmed) return;
+      BANK.rows.splice(i, 1);
+      BANK.dirty = true;
+      bankRender();
+    });
+  }
+
+  function bankSimpan() {
+    var payload = BANK.rows.map(function (r) {
+      return { kelas: r.kelas, tema: r.tema, dimensi: r.dimensi, levels: r.levels };
+    });
+    var warn = bankPeringatan(BANK.rows, BANK.asli, BANK.dipakai);
+
+    function kirim() {
+      var btn = document.getElementById("bankBtnSimpan");
+      notifLoading("Menyimpan bank kokurikuler...");
+      btn.disabled = true;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          btn.disabled = false;
+          res = res || {};
+          BANK.dirty = false;
+          closeLoading();
+          if (res.kalimatKosong) {
+            notifWarning(res.tersimpan + " baris tersimpan. Masih ada " + res.kalimatKosong +
+              " kalimat level yang kosong (level itu dilewati saat deskripsi disusun).");
+          } else {
+            notifSukses(res.tersimpan + " baris tersimpan");
+          }
+          bankMuat();
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false;
+          closeLoading();
+          notifError("Gagal menyimpan: " + (err.message || err));
+        })
+        .saveBankKokurikuler(bankUser(), payload);
+    }
+
+    if (warn.length) {
+      notifConfirm("Tema/dimensi ini diubah atau dihapus padahal sudah dipakai: " + warn.join(", ") +
+        ". Data siswa lama tidak ikut berubah dan bisa tidak terbaca. Lanjutkan?")
+        .then(function (r) { if (r.isConfirmed) kirim(); });
+    } else {
+      kirim();
+    }
+  }
+
+  function bankIsiBawaan() {
+    if (BANK.dirty) { notifWarning("Simpan dulu perubahan Anda sebelum menambah bank bawaan."); return; }
+    notifConfirm("Tambahkan tema dan dimensi bawaan yang belum ada? Baris yang sudah ada tidak diubah.")
+      .then(function (r) {
+        if (!r.isConfirmed) return;
+        notifLoading("Menambahkan bank bawaan...");
+        google.script.run
+          .withSuccessHandler(function (n) {
+            closeLoading();
+            notifSukses((n || 0) + " baris bawaan ditambahkan");
+            bankMuat();
+          })
+          .withFailureHandler(function (err) {
+            closeLoading();
+            notifError("Gagal: " + (err.message || err));
+          })
+          .isiBankKokurikulerAdmin(bankUser());
+      });
+  }
+  </script>
+
   <script>
   function showRegister() {
       const loginBox = document.getElementById('login-box');
@@ -4554,6 +4834,7 @@ function showTab(tab) {
     'nilai',
     'absensi',
     'kokurikuler',
+    'bankkokurikuler',
     'identitas',
     'users',
     'appinfo',
@@ -4572,6 +4853,7 @@ function showTab(tab) {
     nilai: "tabNilai",
     absensi: "tabAbsensi",
     kokurikuler: "tabKokurikuler",
+    bankkokurikuler: "tabBankKokurikuler",
     identitas: "tabIdentitas",
     users: "tabUsers",
     appinfo: "tabAppInfo",
@@ -4674,6 +4956,10 @@ function showTab(tab) {
 
     case 'kokurikuler':
       kokurBukaTab();
+      break;
+
+    case 'bankkokurikuler':
+      bankBuka();
       break;
 
     case 'appinfo':
@@ -6681,6 +6967,7 @@ function setupSiswaMode() {
     'tabNilai',
     'tabAbsensi',
     'tabKokurikuler',
+    'tabBankKokurikuler',
     'tabUsers',
     'tabTp',
     'tabDatasiswa',
@@ -7739,7 +8026,7 @@ window.addEventListener('load', function() {
 (function () {
   var body = document.body;
   var NAV_BTN = {
-    beranda: "tabBeranda", nilai: "tabNilai", absensi: "tabAbsensi", kokurikuler: "tabKokurikuler", tp: "tabTp",
+    beranda: "tabBeranda", nilai: "tabNilai", absensi: "tabAbsensi", kokurikuler: "tabKokurikuler", bankkokurikuler: "tabBankKokurikuler", tp: "tabTp",
     pesanmapel: "tabPesanMapel", nilaisiswa: "tabNilaiSaya", datasiswa: "tabDatasiswa",
     mapel: "tabMapel", aturanmapel: "tabAturanMapel", identitas: "tabIdentitas",
     users: "tabUsers", appinfo: "tabAppInfo"
