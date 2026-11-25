@@ -1156,6 +1156,26 @@
           </div>
         </div>
 
+        <div class="flex flex-wrap items-center gap-2 border-t pt-3">
+          <button type="button" onclick="bankUnduh()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">📥 Unduh Excel</button>
+
+          <input type="file" id="bankFileExcel" accept=".xlsx,.xls" class="border rounded px-2 py-1 text-sm">
+
+          <select id="bankModeUnggah" class="border rounded px-2 py-2 text-sm">
+            <option value="gabung">Gabung (tidak menghapus baris lama)</option>
+            <option value="ganti">Ganti semua isi bank</option>
+          </select>
+
+          <button type="button" onclick="bankUnggah()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">📤 Unggah Excel</button>
+
+          <button type="button" onclick="bankMuatUlang()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded">↻ Muat ulang</button>
+        </div>
+        <p class="text-xs text-gray-500">
+          Unggah hanya memasukkan isi file ke tabel sebagai <b>pratinjau</b>. Tidak ada yang tersimpan ke
+          spreadsheet sampai Anda menekan <b>Simpan Semua</b>. Mode <b>Gabung</b>: baris dengan Kelas, Tema, dan
+          Dimensi yang sama diperbarui, baris baru ditambahkan, dan sel kosong di file tidak menghapus kalimat lama.
+        </p>
+
         <p class="text-xs text-amber-700">
           Perhatian: jangan mengganti nama Tema atau Dimensi yang sudah dipakai menilai siswa. Data siswa lama
           menyimpan nama aslinya dan dimensinya bisa tidak terbaca. Untuk tema baru, tambahkan baris baru.
@@ -4660,6 +4680,265 @@ function cetakRapor(nis) {
           })
           .isiBankKokurikulerAdmin(bankUser());
       });
+  }
+  </script>
+
+
+  <!-- ================= BANK KOKURIKULER: EXCEL ================= -->
+  <script>
+  // Judul kolom dibaca fleksibel (huruf besar/kecil, spasi, dan urutan kolom bebas)
+  var BANK_ALIAS = {
+    kelas: ["kelas"],
+    tema: ["tema", "temakegiatan", "kegiatan"],
+    dimensi: ["dimensi", "dimensiprofillulusan"],
+    lv0: ["perlubimbingan", "pb"],
+    lv1: ["cukup", "c"],
+    lv2: ["baik", "b"],
+    lv3: ["sangatbaik", "sb"]
+  };
+
+  function bankNorm(h) { return String(h == null ? "" : h).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function bankKunci3(k, t, d) {
+    return [String(k || "semua").trim() || "semua", t, d].map(function (x) { return String(x || "").trim().toLowerCase(); }).join("|");
+  }
+
+  // rows = hasil XLSX.utils.sheet_to_json. Mengembalikan baris valid + laporan baris yang diabaikan.
+  function bankParse(rows, levelList) {
+    var hasil = { items: [], diabaikan: [], dobelFile: 0, kolomHilang: [], error: "" };
+    if (!rows || !rows.length) { hasil.error = "File kosong atau tidak ada baris data."; return hasil; }
+
+    var headers = Object.keys(rows[0]);
+    var peta = {};
+    Object.keys(BANK_ALIAS).forEach(function (f) {
+      for (var i = 0; i < headers.length; i++) {
+        if (BANK_ALIAS[f].indexOf(bankNorm(headers[i])) >= 0) { peta[f] = headers[i]; return; }
+      }
+    });
+
+    if (!peta.tema || !peta.dimensi) {
+      hasil.error = "Kolom Tema dan Dimensi tidak ditemukan. Judul kolom di file: " + headers.join(", ") + ".";
+      return hasil;
+    }
+    levelList.forEach(function (l, li) { if (!peta["lv" + li]) hasil.kolomHilang.push(l); });
+    if (hasil.kolomHilang.length === levelList.length) {
+      hasil.error = "Tidak ada kolom level (" + levelList.join(", ") + ") di file.";
+      return hasil;
+    }
+
+    var ambil = function (r, f) { return peta[f] ? String(r[peta[f]] == null ? "" : r[peta[f]]).trim() : ""; };
+    var indeks = {};
+
+    rows.forEach(function (r, i) {
+      var noExcel = i + 2; // baris 1 = judul kolom
+      var kelas = ambil(r, "kelas") || "semua";
+      var tema = ambil(r, "tema");
+      var dimensi = ambil(r, "dimensi");
+      var levels = {};
+      var adaIsi = !!(ambil(r, "kelas") || tema || dimensi);
+      levelList.forEach(function (l, li) {
+        levels[l] = ambil(r, "lv" + li);
+        if (levels[l]) adaIsi = true;
+      });
+      if (!adaIsi) return; // baris kosong dilewati diam-diam
+
+      if (!tema || !dimensi) { hasil.diabaikan.push("Baris " + noExcel + ": " + (!tema ? "Tema" : "Dimensi") + " kosong"); return; }
+      if (/[=;]/.test(tema + dimensi)) { hasil.diabaikan.push("Baris " + noExcel + ': Tema/Dimensi memuat tanda "=" atau ";"'); return; }
+
+      var item = { kelas: kelas, tema: tema, dimensi: dimensi, levels: levels, baris: noExcel };
+      var k = bankKunci3(kelas, tema, dimensi);
+      if (k in indeks) { hasil.items[indeks[k]] = item; hasil.dobelFile++; }   // yang terakhir dipakai
+      else { indeks[k] = hasil.items.length; hasil.items.push(item); }
+    });
+    return hasil;
+  }
+
+  // Mode Gabung: ubah `rows` langsung. Sel kosong di file TIDAK menghapus kalimat lama.
+  // Ejaan Tema/Dimensi yang sudah ada dipertahankan (tidak diganti ejaan dari file).
+  function bankGabung(rows, items) {
+    var idx = {};
+    rows.forEach(function (r, i) { idx[bankKunci3(r.kelas, r.tema, r.dimensi)] = i; });
+    var upd = 0, add = 0, sama = 0;
+    items.forEach(function (it) {
+      var k = bankKunci3(it.kelas, it.tema, it.dimensi);
+      if (k in idx) {
+        var r = rows[idx[k]], ubah = false;
+        Object.keys(it.levels).forEach(function (l) {
+          var v = it.levels[l];
+          if (v !== "" && v !== String(r.levels[l] || "").trim()) { r.levels[l] = v; ubah = true; }
+        });
+        if (ubah) upd++; else sama++;
+      } else {
+        rows.push({ kelas: it.kelas, tema: it.tema, dimensi: it.dimensi, levels: Object.assign({}, it.levels) });
+        idx[k] = rows.length - 1; add++;
+      }
+    });
+    return { diperbarui: upd, ditambah: add, sama: sama };
+  }
+
+  function bankRingkasan(judul, baris, peringatan) {
+    Swal.fire({
+      icon: peringatan ? "warning" : "success",
+      title: judul,
+      html: '<div style="text-align:left;font-size:14px;line-height:1.5">' +
+        baris.map(function (x) { return bankEsc(x); }).join("<br>") + "</div>"
+    });
+  }
+
+  // ---------- Unggah ----------
+  function bankUnggah() {
+    var input = document.getElementById("bankFileExcel");
+    var file = input && input.files && input.files[0];
+    if (!file) { notifWarning("Pilih file Excel terlebih dahulu"); return; }
+    if (typeof XLSX === "undefined") { notifError("Pustaka Excel belum termuat. Muat ulang halaman lalu coba lagi."); return; }
+    if (!BANK.levelList.length) { notifWarning("Data bank belum dimuat. Buka ulang tab ini."); return; }
+
+    var mode = document.getElementById("bankModeUnggah").value;
+    var reader = new FileReader();
+
+    reader.onerror = function () { notifError("File tidak dapat dibaca."); };
+    reader.onload = function (e) {
+      var rows;
+      try {
+        var wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+        var nama = wb.SheetNames.filter(function (n) { return String(n).trim().toLowerCase() === "bank"; })[0] || wb.SheetNames[0];
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[nama], { defval: "", raw: false });
+      } catch (err) {
+        notifError("File tidak dapat dibaca: " + err.message);
+        return;
+      }
+
+      var p = bankParse(rows, BANK.levelList);
+      if (p.error) { notifError(p.error); return; }
+      if (!p.items.length) {
+        notifWarning("Tidak ada baris valid di file." + (p.diabaikan.length ? " " + p.diabaikan.slice(0, 3).join("; ") : ""));
+        return;
+      }
+
+      function laporan(barisUtama) {
+        var b = barisUtama.slice();
+        if (p.dobelFile) b.push(p.dobelFile + " baris dobel di file (yang terakhir dipakai).");
+        if (p.kolomHilang.length) b.push("Kolom tidak ditemukan di file: " + p.kolomHilang.join(", ") + ".");
+        if (p.diabaikan.length) {
+          b.push(p.diabaikan.length + " baris diabaikan:");
+          p.diabaikan.slice(0, 6).forEach(function (x) { b.push("• " + x); });
+          if (p.diabaikan.length > 6) b.push("• dan " + (p.diabaikan.length - 6) + " lainnya");
+        }
+        b.push("Belum tersimpan. Periksa tabel, lalu tekan Simpan Semua.");
+        return b;
+      }
+      var perhatian = !!(p.diabaikan.length || p.kolomHilang.length || p.dobelFile);
+
+      if (mode === "gabung") {
+        var r = bankGabung(BANK.rows, p.items);
+        BANK.dirty = true;
+        input.value = "";
+        bankRender();
+        bankRingkasan("Gabung selesai (pratinjau)", laporan([
+          p.items.length + " baris valid dibaca dari file.",
+          r.ditambah + " baris ditambahkan, " + r.diperbarui + " diperbarui, " + r.sama + " tanpa perubahan."
+        ]), perhatian);
+        return;
+      }
+
+      // Mode Ganti semua: dua konfirmasi
+      var baru = p.items.map(function (it) { return { kelas: it.kelas, tema: it.tema, dimensi: it.dimensi, levels: it.levels }; });
+      var hilang = bankPeringatan(baru, BANK.asli, BANK.dipakai);
+
+      Swal.fire({
+        icon: "warning",
+        title: "Ganti semua isi bank?",
+        text: "Seluruh isi tabel akan diganti dengan " + baru.length + " baris dari file. Baris yang tidak ada di file akan hilang saat Anda menekan Simpan Semua.",
+        showCancelButton: true, confirmButtonText: "Lanjut", cancelButtonText: "Batal"
+      }).then(function (r1) {
+        if (!r1.isConfirmed) return;
+        Swal.fire({
+          icon: "warning",
+          title: "Yakin mengganti semuanya?",
+          text: hilang.length
+            ? "Tema/dimensi ini sudah dipakai menilai siswa tetapi tidak ada di file: " + hilang.join(", ") + ". Dimensinya bisa tidak terbaca di data siswa lama."
+            : "Isi tabel saat ini akan ditimpa. Pilih Muat ulang bila ingin membatalkan sebelum menyimpan.",
+          showCancelButton: true, confirmButtonColor: "#dc2626",
+          confirmButtonText: "Ya, ganti semua", cancelButtonText: "Batal"
+        }).then(function (r2) {
+          if (!r2.isConfirmed) return;
+          BANK.rows = baru;
+          BANK.dirty = true;
+          input.value = "";
+          bankRender();
+          bankRingkasan("Isi bank diganti (pratinjau)", laporan([baru.length + " baris dari file menggantikan isi tabel."]), perhatian || hilang.length > 0);
+        });
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function bankMuatUlang() {
+    if (!BANK.dirty) { bankMuat(); return; }
+    notifConfirm("Buang perubahan yang belum disimpan dan muat ulang dari spreadsheet?")
+      .then(function (r) { if (r.isConfirmed) { BANK.dirty = false; bankMuat(); } });
+  }
+
+  // ---------- Unduh ----------
+  function bankUnduh() {
+    if (!BANK.levelList.length) { notifWarning("Data bank belum dimuat."); return; }
+
+    if (!BANK.dirty) { bankTulisXlsx(BANK.rows); return; }
+
+    Swal.fire({
+      icon: "question",
+      title: "Ada perubahan belum disimpan",
+      text: "Unduh versi yang mana?",
+      showDenyButton: true, showCancelButton: true,
+      confirmButtonText: "Yang sedang diedit",
+      denyButtonText: "Yang tersimpan",
+      cancelButtonText: "Batal"
+    }).then(function (r) {
+      if (r.isConfirmed) { bankTulisXlsx(BANK.rows); return; }
+      if (!r.isDenied) return;
+      notifLoading("Menyiapkan file...");
+      google.script.run
+        .withSuccessHandler(function (d) { closeLoading(); bankTulisXlsx((d && d.rows) || []); })
+        .withFailureHandler(function (err) { closeLoading(); notifError("Gagal mengambil data: " + (err.message || err)); })
+        .getBankKokurikuler(bankUser());
+    });
+  }
+
+  function bankTulisXlsx(rows) {
+    if (typeof XLSX === "undefined") { notifError("Pustaka Excel belum termuat. Muat ulang halaman lalu coba lagi."); return; }
+
+    var aoa = [["Kelas", "Tema", "Dimensi"].concat(BANK.levelList)];
+    rows.forEach(function (r) {
+      var tema = String(r.tema || "").trim(), dim = String(r.dimensi || "").trim();
+      var lv = BANK.levelList.map(function (l) { return String((r.levels || {})[l] || ""); });
+      if (!tema && !dim && lv.every(function (x) { return !x.trim(); })) return;
+      aoa.push([String(r.kelas || "").trim() || "semua", tema, dim].concat(lv));
+    });
+    if (aoa.length === 1) { notifWarning("Tidak ada data untuk diunduh."); return; }
+
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 10 }, { wch: 32 }, { wch: 30 }, { wch: 60 }, { wch: 60 }, { wch: 60 }, { wch: 60 }];
+
+    var petunjuk = [
+      ["PETUNJUK BANK DESKRIPSI KOKURIKULER"],
+      [""],
+      ["1. Satu baris = satu Dimensi di dalam satu Tema."],
+      ["2. Kelas: tulis semua, atau daftar seperti 4;5;6. Dikosongkan dianggap semua."],
+      ["3. Kolom Perlu Bimbingan sampai Sangat Baik berisi kalimat deskripsi. Tulis {nama} bila ingin nama siswa muncul."],
+      ["4. Jangan mengubah judul kolom di sheet Bank. Urutan kolom boleh berbeda."],
+      ["5. Jangan mengganti nama Tema/Dimensi yang sudah dipakai menilai siswa. Untuk tema baru, tambahkan baris baru."],
+      ["6. Mode Gabung: baris dengan Kelas+Tema+Dimensi yang sama diperbarui, baris baru ditambahkan, sel kosong tidak menghapus kalimat lama."],
+      ["7. Mode Ganti semua: isi bank diganti persis seperti file ini."],
+      ["8. Setelah diunggah, periksa tabel di aplikasi lalu tekan Simpan Semua."],
+      [""],
+      ["Dimensi Profil Lulusan (saran penulisan):"]
+    ].concat((BANK.dimensiResmi || []).map(function (d) { return ["- " + d]; }));
+    var wsP = XLSX.utils.aoa_to_sheet(petunjuk);
+    wsP["!cols"] = [{ wch: 120 }];
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Bank");
+    XLSX.utils.book_append_sheet(wb, wsP, "Petunjuk");
+    XLSX.writeFile(wb, "Bank_Kokurikuler_" + new Date().toISOString().slice(0, 10) + ".xlsx");
   }
   </script>
 
